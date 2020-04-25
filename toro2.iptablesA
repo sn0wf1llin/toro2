@@ -1,0 +1,20 @@
+#!/bin/bash
+
+NON_TOR="192.168.1.0/24 192.168.0.0/24 192.168.211.0/24"
+TRANS_PORT=9040
+
+iptables -t nat -A OUTPUT -p tcp -m owner --uid-owner root -m tcp -j RETURN && \
+iptables -t nat -A OUTPUT -p udp --dport 53 -j REDIRECT --to-ports 53 && \
+for NET in $NON_TOR 127.0.0.0/9 127.128.0.0/10; do iptables -t nat -A OUTPUT -d $NET -j RETURN; done && \
+iptables -t nat -A OUTPUT -p tcp --syn -j REDIRECT --to-ports $TRANS_PORT && \
+iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT && \
+for NET in $NON_TOR 127.0.0.0/8; do  iptables -A OUTPUT -d $NET -j ACCEPT; done && \
+iptables -A OUTPUT -m owner --uid-owner root -j ACCEPT && \
+iptables -A OUTPUT -j REJECT && \
+ip6tables -A OUTPUT -j REJECT && echo "rules added." || echo "rules adding error"
+
+#iptables -t nat -A OUTPUT -p tcp -m owner --uid-owner h3llc47 -m tcp -j REDIRECT --to-ports 9040
+#iptables -t nat -A OUTPUT -p udp -m owner --uid-owner h3llc47 -m udp --dport 53 -j REDIRECT --to-ports 53
+#iptables -t filter -A OUTPUT -p tcp -m owner --uid-owner h3llc47 -m tcp --dport 9040 -j ACCEPT
+#iptables -t filter -A OUTPUT -p udp -m owner --uid-owner h3llc47 -m udp --dport 53 -j ACCEPT
+#iptables -t filter -A OUTPUT -m owner --uid-owner h3llc47 -j DROP
