@@ -1,14 +1,20 @@
 #!/bin/bash
 
-NON_TOR="192.168.1.0/24 192.168.0.0/24 192.168.211.0/24"
-TRANS_PORT=9040
+iptables -t nat -D OUTPUT -j TORO2CHAIN_OUTPUT
+iptables -D OUTPUT -j TORO2CHAIN_OUTPUT
+iptables -D INPUT -j TORO2CHAIN_INPUT
 
-iptables -t nat -D OUTPUT -p tcp -m owner --uid-owner root -m tcp -j RETURN && \
-iptables -t nat -D OUTPUT -p udp --dport 53 -j REDIRECT --to-ports 53 && \
-for NET in $NON_TOR 127.0.0.0/9 127.128.0.0/10; do iptables -t nat -D OUTPUT -d $NET -j RETURN; done && \
-iptables -t nat -D OUTPUT -p tcp --syn -j REDIRECT --to-ports $TRANS_PORT && \
-iptables -D OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT && \
-for NET in $NON_TOR 127.0.0.0/8; do  iptables -D OUTPUT -d $NET -j ACCEPT; done && \
-iptables -D OUTPUT -m owner --uid-owner root -j ACCEPT && \
-iptables -D OUTPUT -j REJECT && \
-ip6tables -D OUTPUT -j REJECT && echo "rules removed." || echo "rules removing error"
+iptables -t nat -F TORO2CHAIN_OUTPUT
+iptables -t nat -X TORO2CHAIN_OUTPUT
+iptables -F TORO2CHAIN_INPUT
+iptables -X TORO2CHAIN_INPUT
+iptables -F TORO2CHAIN_OUTPUT
+iptables -X TORO2CHAIN_OUTPUT
+
+if [ $? -eq 0 ]; then
+  echo "Removing new toro2 rules: SUCCESS"
+  exit 0;
+else
+  echo "Removing new toro2 rules: FAILURE"
+  exit 1;
+fi;

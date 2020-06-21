@@ -1,5 +1,22 @@
+DataDir /var/lib/tor
+User tor
+
+Bridge  obsf3 73.180.47.84:28366 D9B79AC4D8A4E8F0992EE234B6AF42ACCD925018
+Bridge  obsf3 178.195.65.161:18751 6796DCB4BF0F4DF3329A59E5BD538DCA2A221D4E
+Bridge  obsf3 100.2.193.150:9001 7291F6C220B498A6FD327CC2B4CAE63D02BD7ECE
+UseBridges      1
+
+ClientOnly 1
+TransPort 9040
+DNSPort   9060
+
+#Log notice file /var/log/tor/notices.log
+# Send every possible message to /var/log/tor/debug.log
+Log debug file /var/log/tor/debug.log
+# Use the system log instead of Tor's logfiles
+Log notice stdout
+# To send all messages to stderr:
+#Log debug stderr
+
 VirtualAddrNetwork 10.192.0.0/10
 AutomapHostsOnResolve 1
-TransPort 9040
-DNSPort 53
-#RunAsDaemon 1

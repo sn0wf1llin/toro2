@@ -1,20 +1,85 @@
 #!/bin/bash
 
-NON_TOR="192.168.1.0/24 192.168.0.0/24 192.168.211.0/24"
+IGNORE_TOR="192.168.100.0/24 192.168.211.0/24 192.168.1.0/24 192.168.0.0/24"
+TOR_USERNAME=tor
+TOR_UID=$(getent passwd | grep $TOR_USERNAME | cut -d':' -f3)
+VirtualAddrNetwork=10.192.0.0/10
 TRANS_PORT=9040
+DNS_PORT=9060
+IPTABLES_BAK="iptables.bak"
 
-iptables -t nat -A OUTPUT -p tcp -m owner --uid-owner root -m tcp -j RETURN && \
-iptables -t nat -A OUTPUT -p udp --dport 53 -j REDIRECT --to-ports 53 && \
-for NET in $NON_TOR 127.0.0.0/9 127.128.0.0/10; do iptables -t nat -A OUTPUT -d $NET -j RETURN; done && \
-iptables -t nat -A OUTPUT -p tcp --syn -j REDIRECT --to-ports $TRANS_PORT && \
-iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT && \
-for NET in $NON_TOR 127.0.0.0/8; do  iptables -A OUTPUT -d $NET -j ACCEPT; done && \
-iptables -A OUTPUT -m owner --uid-owner root -j ACCEPT && \
-iptables -A OUTPUT -j REJECT && \
-ip6tables -A OUTPUT -j REJECT && echo "rules added." || echo "rules adding error"
+# save old iptables rules
+iptables-save > $IPTABLES_BAK
 
-#iptables -t nat -A OUTPUT -p tcp -m owner --uid-owner h3llc47 -m tcp -j REDIRECT --to-ports 9040
-#iptables -t nat -A OUTPUT -p udp -m owner --uid-owner h3llc47 -m udp --dport 53 -j REDIRECT --to-ports 53
-#iptables -t filter -A OUTPUT -p tcp -m owner --uid-owner h3llc47 -m tcp --dport 9040 -j ACCEPT
-#iptables -t filter -A OUTPUT -p udp -m owner --uid-owner h3llc47 -m udp --dport 53 -j ACCEPT
-#iptables -t filter -A OUTPUT -m owner --uid-owner h3llc47 -j DROP
+# allow lo (CHECK if exists)
+iptables -C INPUT -i lo -j ACCEPT 2>/dev/null
+iptables -C OUTPUT -o lo -j ACCEPT 2>/dev/null
+
+# drop invalid
+iptables -C INPUT -m conntrack --ctstate INVALID -j DROP 2>/dev/null
+
+# create new chain
+iptables -t nat -N TORO2CHAIN_OUTPUT 2>/dev/null
+iptables -N TORO2CHAIN_OUTPUT 2>/dev/null
+iptables -N TORO2CHAIN_INPUT 2>/dev/null
+
+# all traffic from output send to TORO2CHAIN_OUTPUT
+iptables -t nat -A OUTPUT -j TORO2CHAIN_OUTPUT
+iptables -A OUTPUT -j TORO2CHAIN_OUTPUT
+iptables -A INPUT -j TORO2CHAIN_INPUT
+
+# incoming firewall
+iptables -A TORO2CHAIN_INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+
+# ignore tor network return
+for NET in $IGNORE_TOR 127.0.0.1/9 127.128.0.0/10; do
+  iptables -t nat -A TORO2CHAIN_OUTPUT -d $NET -j RETURN;
+  iptables -A TORO2CHAIN_OUTPUT -d $NET -j RETURN;
+done;
+
+# tor user traffic
+iptables -t nat -A TORO2CHAIN_OUTPUT -m owner --uid-owner $TOR_UID -j RETURN
+
+# redirect non-tor user traffic
+iptables -t nat -A TORO2CHAIN_OUTPUT -p tcp -m owner ! --uid-owner $TOR_UID -j REDIRECT --to-ports $TRANS_PORT
+iptables -t nat -A TORO2CHAIN_OUTPUT -p udp -m owner ! --uid-owner $TOR_UID --dport 53 -j REDIRECT --to-ports $DNS_PORT
+
+# allow tor user traffic
+iptables -A TORO2CHAIN_OUTPUT -m owner --uid-owner $TOR_UID -j ACCEPT
+
+# allow root
+#iptables -A TORO2CHAIN_OUTPUT -m owner --uid-owner 0 -j ACCEPT
+
+# tor VirtualAddrNetwork
+iptables -t nat -A TORO2CHAIN_OUTPUT -p tcp -d $VirtualAddrNetwork -j REDIRECT --to-ports $TRANS_PORT
+
+# all DNS requests redirect to DNS_PORT
+iptables -t nat -A TORO2CHAIN_OUTPUT -p tcp -m tcp --dport 53 -j REDIRECT --to-ports $DNS_PORT
+iptables -t nat -A TORO2CHAIN_OUTPUT -p udp -m udp --dport 53 -j REDIRECT --to-ports $DNS_PORT
+
+# all SYN requests through TRANS_PORT
+iptables -t nat -A TORO2CHAIN_OUTPUT -p tcp --syn -j REDIRECT --to-ports $TRANS_PORT
+
+# ignore tor network accept
+for NET in $IGNORE_TOR; do
+  iptables -t nat -A TORO2CHAIN_OUTPUT -d $NET -j ACCEPT;
+  iptables -A TORO2CHAIN_OUTPUT -d $NET -j ACCEPT;
+done;
+
+# ignore all other traffic
+iptables -A TORO2CHAIN_OUTPUT -j DROP
+
+if [ $? -eq 0 ]; then
+  echo "Adding new toro2 rules: SUCCESS"
+  rm -f $IPTABLES_BAK
+  exit 0;
+else
+  echo -e "Adding new toro2 rules: FAILURE.\Iptables configuration will be restored from $IPTABLES_BAK ... "
+  iptables-restore < $IPTABLES_BAK
+  if [ $? -eq 0 ]; then
+    echo " SUCCESS"
+    rm -f $IPTABLES_BAK;
+  else
+    echo " FAILURE";
+  fi;
+fi;

@@ -43,7 +43,7 @@ def check_already_installed(f):
     def wrapper(*args, **kwargs):
         if not (os.path.isdir(args[0].toro2_homedir) and os.path.exists(args[0].toro2_binary)):
             print("[-] {}, {} not found. TORO2 not installed.".format(args[0].toro2_binary, args[0].toro2_homedir))
-            exit(1)
+            return False
         return f(*args, **kwargs)
 
     return wrapper
@@ -60,7 +60,7 @@ class Toro2:
     @staticmethod
     def banner():
         banner = """
-    
+
     ----[ version 2.0        hh15461 ]----
     ----[ Breathe freely with TorO2  ]----
 
@@ -85,7 +85,7 @@ class Toro2:
         backup_dir = "{}/prev-settings.backup".format(self.toro2_homedir)
         # backup_dir = "/tmp/prev-settings.backup"
         backup_files = list(map(lambda i: i.format(os.getenv("HOME")),
-                                ["{}/.tor", "{}/.bashrc", "{}/.bashf", "{}/.bash_profile"])) + \
+                                list(filter(os.path.isdir, ["{}/.tor", "{}/.bashrc", "{}/.bashf", "{}/.bash_profile"])))) + \
                        ["/etc/dnscrypt-proxy/dnscrypt-proxy.toml", "/etc/privoxy/config", "/etc/proxychains.conf"]
 
         limit_backup_dirN = 5
@@ -200,8 +200,10 @@ class Toro2:
         os.chmod(self.toro2_binary, 0o755)
         print("[+] Successfully installed to {}\n[+] Executable: {}".format(dst, self.toro2_binary))
 
+    @check_already_installed
     def uninstall(self):
         try:
+            self.iptablesD()
             shutil.rmtree(self.toro2_homedir)
             if os.path.isfile(self.toro2_binary):
                 os.remove(self.toro2_binary)
@@ -230,8 +232,9 @@ class Toro2:
         rc = self.read_config_file()
         self.config.update(rc)
 
-        for k, v in self.config.items():
-            self.__setattr__(k, v)
+        if self.config:
+            for k, v in self.config.items():
+                self.__setattr__(k, v)
 
     def read_config_file(self, config_file_name=None):
         if config_file_name is None:
@@ -295,6 +298,6 @@ if __name__ == "__main__":
             del toro2
 
         else:
-            print("[-] '{}' wrong.")
+            print("[-] Unknown '{}'.".format(sys.argv[1]))
     else:
         print("Usage: toro2 stop|switch|start|integrate|install|installnobackup|uninstall")
