@@ -1,15 +1,24 @@
 #!/bin/bash
 
-iptables -t nat -D OUTPUT -j TORO2CHAIN_OUTPUT
-iptables -D OUTPUT -j TORO2CHAIN_OUTPUT
-iptables -D INPUT -j TORO2CHAIN_INPUT
+iptables -t filter  -D INPUT  -j TORO2CHAIN_INPUT
+iptables -t filter -F TORO2CHAIN_INPUT
+iptables -t filter -X TORO2CHAIN_INPUT
 
+iptables -t filter  -D OUTPUT -j TORO2CHAIN_OUTPUT
+iptables -t filter -F TORO2CHAIN_OUTPUT
+iptables -t filter -X TORO2CHAIN_OUTPUT
+
+iptables -t nat     -D OUTPUT -j TORO2CHAIN_OUTPUT
 iptables -t nat -F TORO2CHAIN_OUTPUT
 iptables -t nat -X TORO2CHAIN_OUTPUT
-iptables -F TORO2CHAIN_INPUT
-iptables -X TORO2CHAIN_INPUT
-iptables -F TORO2CHAIN_OUTPUT
-iptables -X TORO2CHAIN_OUTPUT
+# iptables -t nat     -D PREROUTING -j TORO2CHAIN_PREROUTING
+# iptables -t nat -F TORO2CHAIN_PREROUTING
+# iptables -t nat -X TORO2CHAIN_PREROUTING
+
+# set filter policy back
+iptables -t filter -P INPUT ACCEPT
+iptables -t filter -P FORWARD ACCEPT
+iptables -t filter -P OUTPUT DROP #ACCEPT
 
 if [ $? -eq 0 ]; then
   echo "Removing new toro2 rules: SUCCESS"

@@ -1,73 +1,149 @@
 #!/bin/bash
 
+# function ensure_rule_exists() {
+#   local table="$1"
+#   local rule="$2"
+#
+#   while true; do
+#     iptables -t $table -D $rule
+#   done;
+#
+#   # now try to add a rule
+#   iptables -t $table -A $rule
+# }
+
 IGNORE_TOR="192.168.100.0/24 192.168.211.0/24 192.168.1.0/24 192.168.0.0/24"
+# Other IANA reserved blocks (These are not processed by tor and dropped by default)
+RESV_IANA="0.0.0.0/8 100.64.0.0/10 169.254.0.0/16 192.0.0.0/24 192.0.2.0/24 192.88.99.0/24 198.18.0.0/15 198.51.100.0/24 203.0.113.0/24 224.0.0.0/4 240.0.0.0/4 255.255.255.255/32"
+
 TOR_USERNAME=tor
 TOR_UID=$(getent passwd | grep $TOR_USERNAME | cut -d':' -f3)
 VirtualAddrNetwork=10.192.0.0/10
 TRANS_PORT=9040
-DNS_PORT=9060
+DNS_PORT=5353
+OUT_IFACE="enp3s0"
 IPTABLES_BAK="iptables.bak"
 
 # save old iptables rules
 iptables-save > $IPTABLES_BAK
 
-# allow lo (CHECK if exists)
-iptables -C INPUT -i lo -j ACCEPT 2>/dev/null
-iptables -C OUTPUT -o lo -j ACCEPT 2>/dev/null
+iptables -t filter -N TORO2CHAIN_INPUT
+iptables -t filter -N TORO2CHAIN_OUTPUT
+iptables -t filter -A INPUT   -j TORO2CHAIN_INPUT
+iptables -t filter -A OUTPUT  -j TORO2CHAIN_OUTPUT
 
-# drop invalid
-iptables -C INPUT -m conntrack --ctstate INVALID -j DROP 2>/dev/null
+iptables -t nat -N TORO2CHAIN_OUTPUT
+# iptables -t nat -N TORO2CHAIN_PREROUTING
+iptables -t nat -A OUTPUT     -j TORO2CHAIN_OUTPUT
+# iptables -t nat -A PREROUTING -j TORO2CHAIN_PREROUTING
 
-# create new chain
-iptables -t nat -N TORO2CHAIN_OUTPUT 2>/dev/null
-iptables -N TORO2CHAIN_OUTPUT 2>/dev/null
-iptables -N TORO2CHAIN_INPUT 2>/dev/null
+# *nat
+# iptables -t nat -A TORO2CHAIN_PREROUTING ! -i lo -p udp -m udp --dport 53 -j REDIRECT --to-ports $DNS_PORT
+#iptables -t nat -A TORO2CHAIN_PREROUTING ! -i lo -p udp -m udp --dport 53 -j LOG --log-prefix "Iptables: PREROUTING: [DNS] UDP Redirected: "
+# iptables -t nat -A TORO2CHAIN_PREROUTING ! -i lo -p tcp -m tcp --dport 53 -j REDIRECT --to-ports $DNS_PORT
+#iptables -t nat -A TORO2CHAIN_PREROUTING ! -i lo -p tcp -m tcp --dport 53 -j LOG --log-prefix "Iptables: PREROUTING: [DNS] TCP Redirected: "
+# iptables -t nat -A TORO2CHAIN_PREROUTING ! -i lo -p tcp -m tcp --tcp-flags FIN,SYN,RST,ACK SYN -j REDIRECT --to-ports $TRANS_PORT
+#iptables -t nat -A TORO2CHAIN_PREROUTING ! -i lo -p tcp -m tcp --tcp-flags FIN,SYN,RST,ACK SYN -j LOG --log-prefix "Iptables: PREROUTING: [SYN] TCP Redirected: "
 
-# all traffic from output send to TORO2CHAIN_OUTPUT
-iptables -t nat -A OUTPUT -j TORO2CHAIN_OUTPUT
-iptables -A OUTPUT -j TORO2CHAIN_OUTPUT
-iptables -A INPUT -j TORO2CHAIN_INPUT
+### *nat OUTPUT (For local redirection)
+# nat .onion addresses
+iptables -t nat -A TORO2CHAIN_OUTPUT -p tcp -m tcp -d $VirtualAddrNetwork -tcp-flags FIN,SYN,RST,ACK SYN -j REDIRECT --to-ports $TRANS_PORT
 
-# incoming firewall
-iptables -A TORO2CHAIN_INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+# nat dns requests to Tor
+iptables -t nat -A TORO2CHAIN_OUTPUT -d 127.0.0.1/32 -p udp -m udp --dport 53 -j REDIRECT --to-ports $DNS_PORT
 
-# ignore tor network return
-for NET in $IGNORE_TOR 127.0.0.1/9 127.128.0.0/10; do
-  iptables -t nat -A TORO2CHAIN_OUTPUT -d $NET -j RETURN;
-  iptables -A TORO2CHAIN_OUTPUT -d $NET -j RETURN;
-done;
-
-# tor user traffic
-iptables -t nat -A TORO2CHAIN_OUTPUT -m owner --uid-owner $TOR_UID -j RETURN
-
-# redirect non-tor user traffic
-iptables -t nat -A TORO2CHAIN_OUTPUT -p tcp -m owner ! --uid-owner $TOR_UID -j REDIRECT --to-ports $TRANS_PORT
-iptables -t nat -A TORO2CHAIN_OUTPUT -p udp -m owner ! --uid-owner $TOR_UID --dport 53 -j REDIRECT --to-ports $DNS_PORT
-
-# allow tor user traffic
-iptables -A TORO2CHAIN_OUTPUT -m owner --uid-owner $TOR_UID -j ACCEPT
-
-# allow root
-#iptables -A TORO2CHAIN_OUTPUT -m owner --uid-owner 0 -j ACCEPT
-
-# tor VirtualAddrNetwork
-iptables -t nat -A TORO2CHAIN_OUTPUT -p tcp -d $VirtualAddrNetwork -j REDIRECT --to-ports $TRANS_PORT
-
-# all DNS requests redirect to DNS_PORT
 iptables -t nat -A TORO2CHAIN_OUTPUT -p tcp -m tcp --dport 53 -j REDIRECT --to-ports $DNS_PORT
+#iptables -t nat -A TORO2CHAIN_OUTPUT -p tcp -m tcp --dport 53 -j LOG --log-prefix "Iptables: [DNS] TCP Redirected: " --log-level 7
+
 iptables -t nat -A TORO2CHAIN_OUTPUT -p udp -m udp --dport 53 -j REDIRECT --to-ports $DNS_PORT
+#iptables -t nat -A TORO2CHAIN_OUTPUT -p udp -m udp --dport 53 -j LOG --log-prefix "Iptables: [DNS] UDP Redirected: "
 
-# all SYN requests through TRANS_PORT
-iptables -t nat -A TORO2CHAIN_OUTPUT -p tcp --syn -j REDIRECT --to-ports $TRANS_PORT
+iptables -t nat -A TORO2CHAIN_OUTPUT -m state --state ESTABLISHED,RELATED -j RETURN
 
-# ignore tor network accept
-for NET in $IGNORE_TOR; do
-  iptables -t nat -A TORO2CHAIN_OUTPUT -d $NET -j ACCEPT;
-  iptables -A TORO2CHAIN_OUTPUT -d $NET -j ACCEPT;
+iptables -t nat -A TORO2CHAIN_OUTPUT -p icmp --icmp-type echo-request -j REDIRECT --to-ports $TRANS_PORT
+
+# Don't nat the Tor process, the loopback, or the local network
+iptables -t nat -A TORO2CHAIN_OUTPUT -m owner --uid-owner $TOR_UID -j RETURN
+iptabled -t nat -A TORO2CHAIN_OUTPUT -o lo -j RETURN
+
+#iptables -t nat -A TORO2CHAIN_OUTPUT -p tcp -d $VirtualAddrNetwork -j LOG --log-prefix "Iptables: nat OUTPUT: TCP VirtualAddrNetwork: "
+
+# Allow lan access for hosts in $IGNORE_TOR
+for NET in $IGNORE_TOR 127.0.0.1/8 10.0.0.0/8 172.16.0.0/12; do
+  iptables -t nat -A TORO2CHAIN_OUTPUT -d $NET -j RETURN;
 done;
 
-# ignore all other traffic
-iptables -A TORO2CHAIN_OUTPUT -j DROP
+for NET in $RESV_IANA; do
+  iptables -t nat -A TORO2CHAIN_OUTPUT -d $NET -j RETURN
+done
+
+# Redirect all other pre-routing and output to Tor's TransPort
+iptables -t nat -A TORO2CHAIN_OUTPUT -p tcp -m tcp --tcp-flags FIN,SYN,RST,ACK SYN -j REDIRECT --to-ports $TRANS_PORT
+#iptables -t nat -A TORO2CHAIN_OUTPUT -p tcp -m tcp --tcp-flags FIN,SYN,RST,ACK SYN -j LOG --log-prefix "Iptables: [SYN] TCP Redirected: "
+
+# ????
+iptables -t nat -A TORO2CHAIN_OUTPUT -j REDIRECT --to-ports $TRANS_PORT
+#iptables -t nat -A TORO2CHAIN_OUTPUT -p tcp -j LOG --log-prefix "Iptables: TCP Redirected: "
+
+
+# *filter
+iptables -t filter -A FORWARD DROP
+
+#iptables -t filter -A TORO2CHAIN_INPUT -p icmp --icmp-type echo-request -j DROP
+iptables -t filter -A TORO2CHAIN_INPUT -p icmp --icmp-type echo-reply -j ACCEPT
+
+iptables -t filter -A TORO2CHAIN_INPUT -m state --state INVALID -j DROP
+#iptables -t filter -A TORO2CHAIN_INPUT -m conntrack --ctstate INVALID -j LOG --log-prefix "Iptables: [INVALID]: Dropped: "
+
+# Don't forget to grant yourself ssh access from remote machines before the DROP.
+iptables -t filter -A TORO2CHAIN_INPUT -i $OUT_IFACE -p tcp --dport 22 -m state --state NEW -j ACCEPT
+
+iptables -t filter -A TORO2CHAIN_INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+
+iptables -t filter -A TORO2CHAIN_INPUT -i lo -j ACCEPT
+
+
+# Allow INPUT from lan hosts in $IGNORE_TOR
+# Uncomment these 3 lines to enable.
+for NET in $IGNORE_TOR 127.0.0.1/8 10.0.0.0/8 172.16.0.0/12; do
+  iptables -t filter -A TORO2CHAIN_INPUT -d $NET -j ACCEPT;
+done;
+
+iptables -t filter -A TORO2CHAIN_OUTPUT -m state --state INVALID -j DROP
+
+iptables -t filter -A TORO2CHAIN_OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+
+
+# Allow Tor process output
+iptables -t filter -A TORO2CHAIN_OUTPUT -o $OUT_IFACE -m owner --uid-owner $TOR_UID -p tcp -m tcp --tcp-flags FIN,SYN,RST,ACK SYN -m state --state NEW -j ACCEPT
+
+# Allow loopback output
+iptables -t filter -A TORO2CHAIN_OUTPUT -d 127.0.0.1/32 -o lo -j ACCEPT
+
+# Tor transproxy magic
+iptables -t filter -A TORO2CHAIN_OUTPUT -d 127.0.0.1/32 -p tcp -m tcp --dport $TRANS_PORT --tcp-flags FIN,SYN,RST,ACK SYN -j ACCEPT
+
+# Allow OUTPUT to lan hosts in $IGNORE_TOR
+# Uncomment these 3 lines to enable.
+for NET in $IGNORE_TOR 127.0.0.1/8 10.0.0.0/8 172.16.0.0/12; do
+  iptables -t filter -A TORO2CHAIN_OUTPUT -d $NET -j ACCEPT;
+done;
+
+
+# Log & Drop everything else. Uncomment to enable logging
+#iptables -A OUTPUT -j LOG --log-prefix "Dropped OUTPUT packet: " --log-level 7 --log-uid
+iptables -t filter -A TORO2CHAIN_OUTPUT -j DROP
+
+### Set default policies to DROP
+iptables -t filter -P INPUT DROP
+iptables -t filter -P FORWARD DROP
+iptables -t filter -P OUTPUT DROP
+
+### Set default policies to DROP for IPv6
+#ip6tables -P INPUT DROP
+#ip6tables -P FORWARD DROP
+#ip6tables -P OUTPUT DROP
+
 
 if [ $? -eq 0 ]; then
   echo "Adding new toro2 rules: SUCCESS"
