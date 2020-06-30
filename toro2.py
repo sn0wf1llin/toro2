@@ -316,7 +316,7 @@ class Toro2:
     def configure(self):
         if self.config:
             for k, v in self.config.items():
-                self.__setattr__(k, v)
+                setattr(self, k, v)
 
         @check_already_installed
         def _configure_tor():
@@ -343,7 +343,7 @@ class Toro2:
             rc = self._read_config_file()
             self.config.update(rc)
             for k, v in self.config.items():
-                self.__setattr__(k, v)
+                setattr(self, k, v)
 
     def print_config(self):
         print("{} Start: {} {}".format("-"*32, self.config_file_name, "-"*32))
