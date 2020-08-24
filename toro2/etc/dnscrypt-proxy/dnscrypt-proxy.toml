@@ -27,7 +27,7 @@
 ## The proxy will automatically pick the fastest, working servers from the list.
 ## Remove the leading # first to enable this; lines starting with # are ignored.
 
-server_names = ['scaleway-fr', 'cloudflare']
+server_names = ['scaleway-fr', 'adguard-dns', 'aaflalo-me-nyc', 'aaflalo-me-gcp', 'alidns-doh', 'doh-eastus-pi-dns', 'doh-eastas-pi-dns', 'doh-eastas-pi-dns-ipv6', 'doh-eastas-pi-dns-ipv6', 'ev-to', 'ev-va', 'libredns', 'oszx', 'quad101', 'publicarray-au2', 'safesurfer', 'quad9-dnscrypt-ip4-filter-pri', 'quad9-dnscrypt-ip6-filter-pri', 'quad9-doh-ip4-nofilter-pri', 'quad9-doh-ip6-nofilter-pri']
 
 
 ## List of local addresses and ports to listen to. Can be IPv4 and/or IPv6.
@@ -133,7 +133,7 @@ keepalive = 30
 
 ## Log level (0-6, default: 2 - 0 is very verbose, 6 only contains fatal errors)
 
-log_level = 2
+log_level = 0
 
 
 ## log file for the application

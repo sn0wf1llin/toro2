@@ -1,15 +1,18 @@
 DataDirectory /var/lib/tor
 User tor
 
-Bridge  obsf3 73.180.47.84:28366 D9B79AC4D8A4E8F0992EE234B6AF42ACCD925018
-Bridge  obsf3 178.195.65.161:18751 6796DCB4BF0F4DF3329A59E5BD538DCA2A221D4E
-Bridge  obsf3 100.2.193.150:9001 7291F6C220B498A6FD327CC2B4CAE63D02BD7ECE
-UseBridges      1
+Bridge  obsf3 195.82.189.52:9901 45ED6EFC39C7F1590B707564D90708D741FD5AC3
+Bridge  obsf3 185.220.101.66:48861 1880F1A582C482A2704D0747654CFF0A2095FD6C
+Bridge  obsf3 176.123.5.203:7410 897C13E1BAC96769FBEA357D14E99505B1A24DC1
+UseBridges      0
+
+# EntryNodes {} StrictNodes 0
+# ExiteNodes {} StrictNodes 0
 
 ClientOnly 1
 SocksPort 9050
 TransPort 9040
-#DNSPort   
+#DNSPort
 
 #Log notice file /var/log/tor/notices.log
 # Send every possible message to /var/log/tor/debug.log
