@@ -7,8 +7,7 @@ TOR_LIBDIR=/var/lib/tor
 TOR_LOGDIR=/var/log/tor
 
 if [ `id -u` -ne 0 ]; then
-	echo "Root access required"
-	exit 1;
+  echo -e "\n[\e[91m!\e[0m] Root access Required."; exit 1
 fi
 
 function make_toro2_conf() {
@@ -56,19 +55,19 @@ case "$OSTYPE" in
 esac
 
 function configure_solaris() {
-	echo "Not implemented yet"
+	echo -e "\n[\e[93m!\e[0m] Not implemented yet for $OS $VER"
 }
 
 function configure_osx() {
-	echo "Not implemented yet"
+	echo -e "\n[\e[93m!\e[0m] Not implemented yet for $OS $VER"
 }
 
 function configure_bsd() {
-	echo "Not implemented yet"
+	echo -e "\n[\e[93m!\e[0m] Not implemented yet for $OS $VER"
 }
 
 function configure_windows() {
-	echo "Not implemented yet"
+	echo -e "\n[\e[93m!\e[0m] Not implemented yet for $OS $VER"
 }
 
 function which_req_bin() {
@@ -119,21 +118,23 @@ function configure_linux() {
 
 	if [[ ! -z $APT_GET_CMD ]]; then
 		if [[ `$APT_GET_CMD list | grep privoxy &>/dev/null` -ne 0 ]]; then
-			$APT_GET_CMD update && $APT_GET_CMD install privoxy
+			$APT_GET_CMD update && $APT_GET_CMD install -y privoxy
 		fi
 		if [[ `$APT_GET_CMD list | grep dnscrypt-proxy &>/dev/null` -ne 0 ]]; then
-			$APT_GET_CMD update && $APT_GET_CMD install libevent-dev privoxy
+			$APT_GET_CMD update && $APT_GET_CMD install -y libevent-dev dnscrypt-proxy
 		fi
+    $APT_GET_CMD update && $APT_GET_CMD install -y tor proxychains minicom
 	elif [[ ! -z $YUM_CMD ]]; then
 		$YUM_CMD -y update && \
-		$YUM_CMD -y install privoxy dnscrypt-proxy
+		$YUM_CMD -y install privoxy dnscrypt-proxy tor proxychains
 	elif [[ ! -z $PACMAN_CMD ]]; then
 		if [[ `$PACMAN_CMD -Qi privoxy &>/dev/null` -ne 0 ]]; then
 			$PACMAN_CMD -Su && $PACMAN_CMD -S privoxy
 		fi
 		if [[ `$PACMAN_CMD -Qi dnscrypt-proxy &>/dev/null` -ne 0 ]]; then
-			$PACMAN_CMD -Su && $PACMAN_CMD -S privoxy
+			$PACMAN_CMD -Su && $PACMAN_CMD -S dnscrypt-proxy
 		fi
+    $PACMAN_CMD -Su && $PACMAN_CMD -S tor proxychains
 	else
 		echo "No package manager configured for $OS $VER"
 		exit 1
