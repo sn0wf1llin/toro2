@@ -101,7 +101,7 @@ def check_already_installed(f):
     def wrapper(*args, **kwargs):
         try:
             if not (os.path.isdir(args[0].toro2_homedir) or os.path.exists(args[0].toro2_binary)) and f.__name__ != 'install':
-                print(f'[{bgcolors.LIGHT_YELLOW_COLOR}-{bgcolors.RESET_COLOR}] {args[0].toro2_binary} (or) {args[0].toro2_homedir} not found. TORO2 not installed.')
+                #print(f'[{bgcolors.LIGHT_YELLOW_COLOR}-{bgcolors.RESET_COLOR}] {args[0].toro2_binary} (or) {args[0].toro2_homedir} not found. TORO2 not installed.')
                 return None
         except Exception as e:
             print(e)
@@ -122,11 +122,12 @@ class Toro2:
                                 "/etc/privoxy/config", "/etc/proxychains.conf",
                                 "/etc/dnsmasq.conf"]))))
         self.config = {
-            "toro2_cuser_homedir": "{}/.toro2".format(os.getenv('HOME')),
+            "toro2_stuff_homedir": "{}/.toro2".format(TORO2_HOMEDIR),
             "toro2_homedir": TORO2_HOMEDIR,
             "toro2_path": TORO2_PATH,
             "toro2_binary": toro2_binary,
-            "backup_osfiles": True
+            "backup_osfiles": True,
+            "pidfile": "/tmp/toro2.pid"
         }
 
         self.configure()
@@ -136,7 +137,9 @@ class Toro2:
         else:
             self.backup_curr_configs = self._backup_curr_configs
 
-        if not hasattr(self, 'username'):
+        try:
+            int(subprocess.getoutput("id -u {}".format(self.username)))
+        except ValueError:
             self.user("toro2", "create")
 
     @staticmethod
@@ -147,7 +150,7 @@ class Toro2:
     def banner():
         banner = """
 
-    --------[ version 2.0.2        hh15461 ]--------
+    --------[ version 2.1.0        hh15461 ]--------
     --------[ Breathe freely with    TorO2 ]--------
 
     ###############################################
@@ -171,7 +174,7 @@ class Toro2:
 
     def _backup_curr_configs(self):
         # backup_dir = [backup.0, backup.1, ..., backup.N]
-        backup_dir = "{}/prev-settings.backup".format(self.toro2_cuser_homedir)
+        backup_dir = "{}/prev-settings.backup".format(self.toro2_stuff_homedir)
         # backup_dir = "/tmp/prev-settings.backup"
         limit_backup_dirN = 2
         subfolders = []
@@ -225,15 +228,17 @@ class Toro2:
             "BAKDIR", "{}/{}".format(backup_dir, curr_backup_dir))
 
         try:
-            subprocess.call(command, shell=True)
+            subprocess.call("sudo -u {} {}".format(self.username, command), shell=True)
         except Exception as e:
             print(f'[{bgcolors.RED_COLOR}x{bgcolors.RESET_COLOR}] Unable to execute {bgcolors.LIGHT_YELLOW_COLOR}{command}{bgcolors.RESET_COLOR} : {e}')
 
     def iptablesA(self):
-        subprocess.call("{}/toro2/toro2.iptablesA".format(self.toro2_homedir), shell=True)
+        bad_ifaces = ['lo']
+        out_ifaces = "".join(i + " " for i in os.listdir('/sys/class/net') if i not in bad_ifaces)[:-1]
+        subprocess.call("export OUT_IFACES={} && sudo -E {}/toro2/toro2.iptablesA".format(out_ifaces, self.toro2_homedir), shell=True)
 
     def iptablesD(self):
-        subprocess.call("{}/toro2/toro2.iptablesD".format(self.toro2_homedir), shell=True)
+        subprocess.call("sudo {}/toro2/toro2.iptablesD".format(self.toro2_homedir), shell=True)
 
     @check_already_installed
     def switch_identity(self):
@@ -251,7 +256,7 @@ class Toro2:
             print(f'[{bgcolors.RED_COLOR}x{bgcolors.RESET_COLOR}] Unable to kill {bgcolors.LIGHT_YELLOW_COLOR}{pcs}{bgcolors.RESET_COLOR} : {e}')
 
     def _manage_service(self, srv, action="status"):
-        if subprocess.call("{} {} {} >/dev/null".format(self.systemctl, action, srv), shell=True) != 0:
+        if subprocess.call("sudo {} {} {} >/dev/null".format(self.systemctl, action, srv), shell=True) != 0:
             print(f'[{bgcolors.LIGHT_YELLOW_COLOR}-{bgcolors.RESET_COLOR}] Unable {bgcolors.CYAN_COLOR}{action}{bgcolors.RESET_COLOR} {srv}.service ... ')
 
     def kill_tor(self):
@@ -293,16 +298,22 @@ class Toro2:
 
     @check_already_installed
     def stop(self):
+        if os.path.exists(self.pidfile):
+            os.remove(self.pidfile)
+
         self.kill_tor()
 
         # delete iptables.superbak.lock & ip6tables.superbak.lock files
         if os.path.exists("{}/iptables.superbak.lock".format(self.toro2_homedir)):
-            os.remove("{}/iptables.superbak.lock".format(self.toro2_homedir))
+            subprocess.call("sudo -u {} rm -f {}/iptables.superbak.lock".format(self.username, self.toro2_homedir), shell=True)
+            # os.remove("{}/iptables.superbak.lock".format(self.toro2_homedir))
 
         if os.path.exists("{}/ip6tables.superbak.lock".format(self.toro2_homedir)):
-            os.remove("{}/ip6tables.superbak.lock".format(self.toro2_homedir))
+            subprocess.call("sudo -u {} rm -f {}/ip6tables.superbak.lock".format(self.username, self.toro2_homedir), shell=True)
+            # os.remove("{}/ip6tables.superbak.lock".format(self.toro2_homedir))
 
         self.iptablesD()
+
         print(f'[{bgcolors.GREEN_COLOR}+{bgcolors.RESET_COLOR}] {bgcolors.WHITE_COLOR}iptables{bgcolors.RESET_COLOR}: {bgcolors.YELLOW_COLOR}delete{bgcolors.RESET_COLOR} new rules')
 
         for rserv in self.required_services:
@@ -311,27 +322,36 @@ class Toro2:
 
     @check_already_installed
     def start(self):
-        self.backup_curr_configs()
+        if not os.path.exists(self.pidfile):
+            with open(self.pidfile, 'w') as f: f.write(str(os.getpid()))
 
-        self.iptablesA()
-        print(f'[{bgcolors.GREEN_COLOR}+{bgcolors.RESET_COLOR}] {bgcolors.WHITE_COLOR}iptables{bgcolors.RESET_COLOR}: {bgcolors.LIGHT_GREEN_COLOR}add{bgcolors.RESET_COLOR} new rules')
+            self.backup_curr_configs()
 
-        for rserv in self.required_services:
-            self._manage_service(rserv, "start")
-            print(f'[{bgcolors.GREEN_COLOR}+{bgcolors.RESET_COLOR}] {bgcolors.WHITE_COLOR}{rserv}{bgcolors.RESET_COLOR} : start')
+            self.iptablesA()
 
-        if self.tor_as_process:
-            try:
-                print(f'[{bgcolors.GREEN_COLOR}+{bgcolors.RESET_COLOR}] Starting {bgcolors.WHITE_COLOR}tor{bgcolors.RESET_COLOR} ... ')
-                subprocess.call("{} -f {}/toro2/toro2.torrc".format(self.tor, self.toro2_homedir), shell=True)
-            except KeyboardInterrupt as e:
-                self.stop()
-            except Exception as e:
-                self.kill_tor()
-                self.stop()
+            print(f'[{bgcolors.GREEN_COLOR}+{bgcolors.RESET_COLOR}] {bgcolors.WHITE_COLOR}iptables{bgcolors.RESET_COLOR}: {bgcolors.LIGHT_GREEN_COLOR}add{bgcolors.RESET_COLOR} new rules')
+
+            for rserv in self.required_services:
+                self._manage_service(rserv, "start")
+                print(f'[{bgcolors.GREEN_COLOR}+{bgcolors.RESET_COLOR}] {bgcolors.WHITE_COLOR}{rserv}{bgcolors.RESET_COLOR} : start')
+
+            if self.tor_as_process:
+                try:
+                    print(f'[{bgcolors.GREEN_COLOR}+{bgcolors.RESET_COLOR}] Starting {bgcolors.WHITE_COLOR}tor{bgcolors.RESET_COLOR} ... ')
+                    subprocess.call("sudo -u {} {} -f {}/toro2/toro2.torrc".format(self.username, self.tor, self.toro2_homedir), shell=True)
+                    #subprocess.call("{} -f {}/toro2/toro2.torrc".format(self.tor, self.toro2_homedir), shell=True)
+                except KeyboardInterrupt as e:
+                    self.stop()
+                except Exception as e:
+                    self.kill_tor()
+                    self.stop()
+            else:
+                # tor is run as service
+                self._manage_service("tor", "start")
+
         else:
-            # tor is run as service
-            self._manage_service("tor", "start")
+            with open(self.pidfile,'r') as f: pid = f.readline().strip()
+            print(f'[{bgcolors.LIGHT_YELLOW_COLOR}-{bgcolors.RESET_COLOR}] Toro2 already started PID {bgcolors.LIGHT_YELLOW_COLOR} {pid} {bgcolors.RESET_COLOR}')
 
     def os_fully_integrate(self):
         print(f'[{bgcolors.LIGHT_YELLOW_COLOR}-{bgcolors.RESET_COLOR}] Fully OS integration is {bgcolors.LIGHT_YELLOW_COLOR}Not implemented yet{bgcolors.RESET_COLOR}')
@@ -344,6 +364,7 @@ class Toro2:
                 print("[.] {} ... ".format("{}/toro2/{}".format(os.getcwd(), sys_file)))
             else:
                 shutil.copy("{}/toro2/{}".format(os.getcwd(), sys_file), dst)
+
         except Exception as e:
             print(f'[{bgcolors.RED_COLOR}x{bgcolors.RESET_COLOR}] Troubles while copying {sys_file} to {dst} : {e}')
 
@@ -381,13 +402,12 @@ class Toro2:
 
     def user(self, username, action):
         if action == "create":
-            # subprocess.call("groupadd -r {} > /dev/null".format(username), shell=True)
-            subprocess.call("useradd --system --shell /bin/false --no-create-home {} > /dev/null".format(username),
-                stderr=subprocess.PIPE, stdout=subprocess.PIPE, shell=True)
-            # subprocess.call("usermod -a -G {} {} > /dev/null".format(username, username), shell=True)
+            #subprocess.call("groupadd -r {}".format(username), shell=True)
+            subprocess.call("useradd --system --shell /bin/false --no-create-home {}".format(username), shell=True)
             self.username = username
             self.uid = int(subprocess.getoutput("id -u {}".format(self.username)))
             self.gid = int(subprocess.getoutput("id -g {}".format(self.username)))
+
         elif action == "delete":
             subprocess.call("groupdel {}".format(username), shell=True)
             subprocess.call("userdel {}".format(username), shell=True)
@@ -397,12 +417,6 @@ class Toro2:
     def install(self, backup_osfiles_ultimate=True):
         self.banner()
 
-        # if not self.get_system_user() == 'root':
-        #     subprocess.call("usermod -a -G {} {}".format(self.username, self.get_system_user()), shell=True)
-        #
-        toro2_rights_lines = ["%{} ALL=(root) NOPASSWD: {}\n".format(self.username, self.iptables)]
-        toro2_rights_lines.append("%{} ALL=(root) NOPASSWD: {}\n".format(self.username, self.ip6tables))
-        # mkdir self.toro2_homedir
         if not os.path.isdir(self.toro2_homedir):
             os.makedirs(self.toro2_homedir)
 
@@ -426,17 +440,9 @@ class Toro2:
             try:
                 serv_install_func = getattr(self, '_install_{}'.format(rs.replace('-', '_')))
                 serv_install_func()
-                # add user toro2 manage service rs
-                for action in ["start", "stop", "restart", "status"]:
-                    line = "%{} ALL= NOPASSWD: {} {} {}\n".format(self.username, self.systemctl, action, rs)
-                    toro2_rights_lines.append(line)
 
             except Exception as e:
                 print(f'[{bgcolors.RED_COLOR}x{bgcolors.RESET_COLOR}] Can\'t install {bgcolors.LIGHT_YELLOW_COLOR}{rs}{bgcolors.RESET_COLOR} : absense {bgcolors.LIGHT_MAGENTA_COLOR}{"_install_{}".format(rs.replace("-", "_"))}{bgcolors.RESET_COLOR} installation function')
-
-        with open("/etc/sudoers.d/toro2", 'w') as f:
-            for i in toro2_rights_lines:
-                f.write(i)
 
         print(f'[{bgcolors.LIGHT_GRAY_COLOR}.{bgcolors.RESET_COLOR}] {"{}/toro2/toro2".format(os.getcwd())} to {self.toro2_binary} ... ')
         shutil.copy("{}/toro2/toro2".format(os.getcwd()), self.toro2_binary)
@@ -445,8 +451,14 @@ class Toro2:
             os.chown(self.toro2_binary, self.uid, self.gid)
             os.chown(self.toro2_homedir, self.uid, self.gid)
             subprocess.call("chown {}: {}/*".format(self.username, self.toro2_homedir), shell=True)
+            subprocess.call("chown -R {}: {}/toro2/*".format(self.username, self.toro2_homedir), shell=True)
+            subprocess.call("chown root {}/toro2/toro2.iptables*".format(self.toro2_homedir), shell=True)
+            subprocess.call("chmod u+s {}/toro2/toro2.iptables*".format(self.toro2_homedir), shell=True)
+
         except Exception as e:
             print(f'[{bgcolors.RED_COLOR}x{bgcolors.RESET_COLOR}] Unable to set attrs for {self.toro2_binary} {bgcolors.LIGHT_YELLOW_COLOR}or{bgcolors.RESET_COLOR} {self.toro2_homedir} : {e}')
+
+        subprocess.call("chown -R {}: /var/lib/tor".format(self.username), shell=True)
 
         print(f'[{bgcolors.GREEN_COLOR}+{bgcolors.RESET_COLOR}] Successfully installed to {dst}')
         print(f'[{bgcolors.GREEN_COLOR}+{bgcolors.RESET_COLOR}] Executable: {self.toro2_binary}')
@@ -487,8 +499,15 @@ class Toro2:
                 shutil.rmtree(self.toro2_homedir)
                 print(f'[{bgcolors.GREEN_COLOR}+{bgcolors.RESET_COLOR}] Clean {self.toro2_homedir} ... ')
 
-                shutil.rmtree(self.toro2_cuser_homedir)
-                print(f'[{bgcolors.GREEN_COLOR}+{bgcolors.RESET_COLOR}] Clean {self.toro2_cuser_homedir} ... ')
+                if os.path.isdir(f'{self.toro2_stuff_homedir}'):
+                    shutil.rmtree(self.toro2_stuff_homedir)
+                    print(f'[{bgcolors.GREEN_COLOR}+{bgcolors.RESET_COLOR}] Clean {self.toro2_stuff_homedir} ... ')
+
+                if os.path.isdir(f'/home/{self.get_system_user()}/.toro2'):
+                    d = f'/home/{self.get_system_user()}/.toro2'
+                    shutil.rmtree(d)
+                    print(f'[{bgcolors.GREEN_COLOR}+{bgcolors.RESET_COLOR}] Clean {d} ... ')
+
             except Exception as e:
                 print(f'[{bgcolors.RED_COLOR}x{bgcolors.RESET_COLOR}] {e}')
 
@@ -496,9 +515,7 @@ class Toro2:
                 os.remove(self.toro2_binary)
                 print(f'[{bgcolors.GREEN_COLOR}+{bgcolors.RESET_COLOR}] Executable {self.toro2_binary} removed')
 
-            if os.path.isfile("/etc/sudoers.d/toro2"):
-                os.remove("/etc/sudoers.d/toro2")
-
+            #shutil.rmtree("/opt/toro2")
             self.user("toro2", "delete")
 
         except FileNotFoundError as e:

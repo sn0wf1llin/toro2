@@ -1,6 +1,7 @@
 #!/bin/bash
 
 TORO2_HOMEDIR=/etc/toro2
+if [ -d $TORO2_HOMEDIR ]; then mkdir $TORO2_HOMEDIR ; fi
 TORO2_PATH=/etc
 TORO2_CONF=toro2/toro2.conf
 TOR_LIBDIR=/var/lib/tor
@@ -27,6 +28,8 @@ ip6tables=$IP6TABLES_BIN
 ip6tables_save=$IP6TABLES_SAVE_BIN
 ip6tables_restore=$IP6TABLES_RESTORE_BIN
 systemctl=$SYSTEMCTL_BIN
+username=toro2
+python3=$PYTHON3_BIN
 tor=$TOR_BIN" > $TORO2_CONF
 }
 
@@ -132,7 +135,7 @@ function configure_linux() {
 		useradd --system --shell /bin/false --no-create-home --group --disabled-login privoxy
 	fi
 
-	declare -a required_binaries=("iptables" "iptables-save" "iptables-restore" "ip6tables" "ip6tables-save" "ip6tables-restore" "tor" "systemctl")
+	declare -a required_binaries=("python3" "iptables" "iptables-save" "iptables-restore" "ip6tables" "ip6tables-save" "ip6tables-restore" "tor" "systemctl")
 	myecho -e "\nConfiguring ... \n"
 	for req_bin in "${required_binaries[@]}"; do
 		 which_req_bin $req_bin
@@ -140,7 +143,7 @@ function configure_linux() {
 
 	check_service_exists "privoxy.service" ; if [[ $? -eq 1 ]]; then myecho -e "\n[\e[91m!\e[0m] privoxy.service \e[91mNOT exists\e[91m but \e[91mREQUIRED\e[0m"; exit 1; fi
 	check_service_exists "dnscrypt-proxy.service" ; if [[ $? -eq 1 ]]; then myecho -e "[\e[91m!\e[0m] dnscrypt-proxy.service \e[91mNOT exists\e[0m but \e[91mREQUIRED\e[0m"; exit 1; fi
-	check_service_exists "dnsmasq.service" ; if [[ $? -eq 1 ]]; then myecho -e "[\e[93m!\e[0m] dnsmasq.service \e[91mNOT exists\e[0m and \e[96mNot strictly Required\e[0m. You can install it to use dnsmasq later"; fi
+	check_service_exists "dnsmasq.service" ; if [[ $? -eq 1 ]]; then myecho -e "[\e[93m!\e[0m] dnsmasq.service \e[93mNOT exists\e[0m and \e[96mNot strictly Required\e[0m. You can install it to use dnsmasq later"; fi
 
 	make_toro2_conf
 

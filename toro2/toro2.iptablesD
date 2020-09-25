@@ -1,14 +1,14 @@
 #!/bin/bash
 
-iptables -t filter  -D INPUT  -j TORO2CHAIN_INPUT
+iptables -t filter -D INPUT -j TORO2CHAIN_INPUT
 iptables -t filter -F TORO2CHAIN_INPUT
 iptables -t filter -X TORO2CHAIN_INPUT
 
-iptables -t filter  -D OUTPUT -j TORO2CHAIN_OUTPUT
+iptables -t filter -D OUTPUT -j TORO2CHAIN_OUTPUT
 iptables -t filter -F TORO2CHAIN_OUTPUT
 iptables -t filter -X TORO2CHAIN_OUTPUT
 
-iptables -t nat     -D OUTPUT -j TORO2CHAIN_OUTPUT
+iptables -t nat -D OUTPUT -j TORO2CHAIN_OUTPUT
 iptables -t nat -F TORO2CHAIN_OUTPUT
 iptables -t nat -X TORO2CHAIN_OUTPUT
 # iptables -t nat     -D PREROUTING -j TORO2CHAIN_PREROUTING
