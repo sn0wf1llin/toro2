@@ -156,10 +156,10 @@ function configure_linux() {
   if [ -z $PYTHON3_BIN ]; then echo -e "[\e[91m!\e[0m] python3 required\n[\e[91m!\e[0m] Install python3 and restart the installation"; exit 1; fi
   $PYTHON3_BIN toro2/toro2.py installnobackup
 
-  if [ $foruser != "root" ]; then
-    if [ ! -d $TORO2_TOR_DATADIR ]; then mkdir -p $TORO2_TOR_DATADIR; fi
+  if [[ -z $foruser ]] || [[ $foruser != "root" ]]; then
+    if [ ! -d $TORO2_TOR_DATADIR ]; then mkdir -p $TORO2_TOR_DATADIR; usermod -a -G toro2 `whoami` ; chmod -R 770 $TORO2_TOR_DATADIR ; fi
     chown -R $TORO2_USER: $TORO2_TOR_DATADIR
-    sed -i 's/DataDirectory.*/DataDirectory "$TORO2_TOR_DATADIR"/g' $TORO2_HOMEDIR/toro2/toro2.torrc
+    sed -i "s!DataDirectory.*!DataDirectory $TORO2_TOR_DATADIR!g" $TORO2_HOMEDIR/toro2/toro2.torrc
   else sed -i 's/#User/User/g' $TORO2_HOMEDIR/toro2/toro2.torrc
   fi
 
