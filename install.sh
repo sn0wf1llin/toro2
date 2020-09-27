@@ -5,7 +5,7 @@ TORO2_HOMEDIR=/etc/toro2
 if [ -d $TORO2_HOMEDIR ]; then mkdir $TORO2_HOMEDIR ; fi
 TORO2_PATH=/etc
 TORO2_CONF="$TORO2_HOMEDIR/toro2/toro2.conf"
-TORO2_DATADIR="$TORO2_HOMEDIR/.tor"
+TORO2_TOR_DATADIR="$TORO2_HOMEDIR/.tor"
 TOR_LIBDIR=/var/lib/tor
 TOR_LOGDIR=/var/log/tor
 
@@ -157,9 +157,9 @@ function configure_linux() {
   $PYTHON3_BIN toro2/toro2.py installnobackup
 
   if [ $foruser != "root" ]; then
-    if [ ! -d $TORO2_DATADIR ]; then mkdir -p $TORO2_DATADIR; fi
-    chmod -R $TORO2_USER: $TORO2_DATADIR
-    sed -i 's/DataDirectory.*/DataDirectory "$TORO2_DATADIR"/g' $TORO2_HOMEDIR/toro2/toro2.torrc
+    if [ ! -d $TORO2_TOR_DATADIR ]; then mkdir -p $TORO2_TOR_DATADIR; fi
+    chown -R $TORO2_USER: $TORO2_TOR_DATADIR
+    sed -i 's/DataDirectory.*/DataDirectory "$TORO2_TOR_DATADIR"/g' $TORO2_HOMEDIR/toro2/toro2.torrc
   else sed -i 's/#User/User/g' $TORO2_HOMEDIR/toro2/toro2.torrc
   fi
 
