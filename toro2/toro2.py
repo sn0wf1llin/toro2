@@ -409,8 +409,8 @@ class Toro2:
             self.gid = int(subprocess.getoutput("id -g {}".format(self.username)))
 
         elif action == "delete":
-            subprocess.call("groupdel {}".format(username), shell=True)
             subprocess.call("userdel {}".format(username), shell=True)
+            subprocess.call("groupdel {}".format(username), shell=True)
             self.username = None
 
     @check_already_installed

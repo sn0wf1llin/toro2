@@ -157,8 +157,10 @@ function configure_linux() {
   $PYTHON3_BIN toro2/toro2.py installnobackup
 
   if [[ -z $foruser ]] || [[ $foruser != "root" ]]; then
-    if [ ! -d $TORO2_TOR_DATADIR ]; then mkdir -p $TORO2_TOR_DATADIR; usermod -a -G toro2 `whoami` ; chmod -R 770 $TORO2_TOR_DATADIR ; fi
+    if [ ! -d $TORO2_TOR_DATADIR ]; then mkdir -p $TORO2_TOR_DATADIR; fi
+    usermod -a -G toro2 `logname`
     chown -R $TORO2_USER: $TORO2_TOR_DATADIR
+    chmod -R 770 $TORO2_TOR_DATADIR
     sed -i "s!DataDirectory.*!DataDirectory $TORO2_TOR_DATADIR!g" $TORO2_HOMEDIR/toro2/toro2.torrc
   else sed -i 's/#User/User/g' $TORO2_HOMEDIR/toro2/toro2.torrc
   fi
