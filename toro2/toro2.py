@@ -237,9 +237,9 @@ class Toro2:
         bad_ifaces = ['lo']
         out_ifaces = "".join(i + " " for i in os.listdir('/sys/class/net') if i not in bad_ifaces)[:-1]
         if self.get_system_user() == 'root':
-            subprocess.call("{}/toro2/toro2.iptablesA".format(out_ifaces, self.toro2_homedir), shell=True)
+            subprocess.call("{}/toro2/toro2.iptablesA".format(self.toro2_homedir), shell=True)
         else:
-            subprocess.call("sudo {}/toro2/toro2.iptablesA".format(out_ifaces, self.toro2_homedir), shell=True)
+            subprocess.call("sudo {}/toro2/toro2.iptablesA".format(self.toro2_homedir), shell=True)
 
     def iptablesD(self):
         if self.get_system_user() == 'root':
