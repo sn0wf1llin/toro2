@@ -123,14 +123,11 @@ function configure_linux() {
 	PACMAN_CMD=$(which pacman 2>/dev/null)
 
 	if [[ ! -z $APT_GET_CMD ]]; then
-    $APT_GET_CMD update
-    $APT_GET_CMD install -y libevent-dev dnscrypt-proxy privoxy tor proxychains minicom
+    $APT_GET_CMD update && $APT_GET_CMD install -y libevent-dev dnscrypt-proxy privoxy tor proxychains minicom
 	elif [[ ! -z $YUM_CMD ]]; then
-		$YUM_CMD -y update
-		$YUM_CMD -y install privoxy dnscrypt-proxy tor proxychains
+		$YUM_CMD -y update && $YUM_CMD -y install privoxy dnscrypt-proxy tor proxychains
 	elif [[ ! -z $PACMAN_CMD ]]; then
-    $PACMAN_CMD -Su
-    $PACMAN_CMD -S dnscrypt-proxy privoxy tor proxychains
+    $PACMAN_CMD -Su && $PACMAN_CMD -S dnscrypt-proxy privoxy tor proxychains
 	else
 		echo "No package manager configured for $OS $VER"
 		exit 1
@@ -146,16 +143,22 @@ function configure_linux() {
 		 which_req_bin $req_bin
 	done;
 
-	check_service_exists "privoxy.service" ; if [[ $? -eq 1 ]]; then myecho -e "\n[\e[91m!\e[0m] privoxy.service \e[91mNOT exists\e[91m but \e[91mREQUIRED\e[0m"; exit 1; fi
-	check_service_exists "dnscrypt-proxy.service" ; if [[ $? -eq 1 ]]; then myecho -e "[\e[91m!\e[0m] dnscrypt-proxy.service \e[91mNOT exists\e[0m but \e[91mREQUIRED\e[0m"; exit 1; fi
-	check_service_exists "dnsmasq.service" ; if [[ $? -eq 1 ]]; then myecho -e "[\e[93m!\e[0m] dnsmasq.service \e[93mNOT exists\e[0m and \e[96mNot strictly Required\e[0m. You can install it to use dnsmasq later"; fi
+	check_service_exists "privoxy.service" ; if [[ $? -eq 1 ]]; then myecho -e "\n\t[\e[91m!\e[0m] privoxy.service \e[91mNOT exists\e[91m but \e[91mREQUIRED\e[0m"; exit 1; fi
+	check_service_exists "dnscrypt-proxy.service" ; if [[ $? -eq 1 ]]; then myecho -e "\n\t[\e[91m!\e[0m] dnscrypt-proxy.service \e[91mNOT exists\e[0m but \e[91mREQUIRED\e[0m"; exit 1; fi
+	check_service_exists "dnsmasq.service" ; if [[ $? -eq 1 ]]; then myecho -e "\n\t[\e[93m!\e[0m] dnsmasq.service \e[93mNOT exists\e[0m and \e[96mNot strictly Required\e[0m. You can install it to use dnsmasq later"; fi
 
 	make_toro2_conf
+
+  sed -i "s~ExecStart=/usr/bin/dnscrypt-proxy~ExecStart=$(which dnscrypt-proxy 2>/dev/null)~g" toro2/usr/lib/systemd/system/dnscrypt-proxy.service
+  sed -i "s~ExecStart=/usr/bin/privoxy~ExecStart=$(which privoxy 2>/dev/null)~g" toro2/usr/lib/systemd/system/privoxy.service
 
 	echo -e "\n[\e[92m+\e[0m] Configured Successfully."
 
   if [ -z $PYTHON3_BIN ]; then echo -e "[\e[91m!\e[0m] python3 required\n[\e[91m!\e[0m] Install python3 and restart the installation"; exit 1; fi
   $PYTHON3_BIN toro2/toro2.py installnobackup
+
+  $SYSTEMCTL_BIN stop avahi-daemon && $SYSTEMCTL_BIN stop avahi-daemon.socket
+  $SYSTEMCTL_BIN disable avahi-daemon &&  $SYSTEMCTL_BIN disable avahi-daemon.socket
 
   if [[ -z $foruser ]] || [[ $foruser != "root" ]]; then
     if [ ! -d $TORO2_TOR_DATADIR ]; then mkdir -p $TORO2_TOR_DATADIR; fi
@@ -163,8 +166,22 @@ function configure_linux() {
     chown -R $TORO2_USER: $TORO2_TOR_DATADIR
     chmod -R 770 $TORO2_TOR_DATADIR
     sed -i "s!DataDirectory.*!DataDirectory $TORO2_TOR_DATADIR!g" $TORO2_HOMEDIR/toro2/toro2.torrc
-  else sed -i 's/#User/User/g' $TORO2_HOMEDIR/toro2/toro2.torrc
+    if [ -f "/etc/sudoers.d/toro2" ]; then rm -f /etc/sudoers.d/toro2; fi
+    echo "%toro2 ALL=(ALL) NOPASSWD: $(which kill) tor, $SYSTEMCTL_BIN start tor, $SYSTEMCTL_BIN stop tor, $SYSTEMCTL_BIN start privoxy, $SYSTEMCTL_BIN stop privoxy, $SYSTEMCTL_BIN status tor, $SYSTEMCTL_BIN status privoxy, $SYSTEMCTL_BIN start dnscrypt-proxy, $SYSTEMCTL_BIN stop dnscrypt-proxy, $SYSTEMCTL_BIN status dnscrypt-proxy, $TOR_BIN, $SYSTEMCTL_BIN start dnsmasq, $SYSTEMCTL_BIN stop dnsmasq, $SYSTEMCTL_BIN status dnsmasq" > /etc/sudoers.d/toro2
+  else
+    sed -i 's/#User/User/g' $TORO2_HOMEDIR/toro2/toro2.torrc
   fi
+
+  if [ -z `systemctl is-active systemd-resolved | grep -i inactive` ]; then
+    systemctl stop systemd-resolved && systemctl disable systemd-resolved
+  fi
+  if [ -f /etc/resolv.conf ]; then
+    if [ ! -z `file /etc/resolv.conf | grep "symbolic link"` ]; then unlink /etc/resolv.conf ; fi
+  else chattr -i /etc/resolv.conf && rm -f /etc/resolv.conf ; fi
+  echo -e "nameserver ::1\nnameserver 127.0.0.1\noptions edns0 single-request-reopen" > /etc/resolv.conf
+  chattr +i /etc/resolv.conf
+
+  echo -e "\n[\e[92m+\e[0m] Done."
 
 }
 

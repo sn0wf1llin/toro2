@@ -21,9 +21,7 @@ TOR_UID=$(getent passwd | grep -w $TOR_USERNAME | cut -d':' -f3)
 VirtualAddrNetwork=10.192.0.0/10
 TRANS_PORT=9040
 DNS_PORT=5353
-if [ -z "$OUT_IFACES" ]; then 
-  OUT_IFACES=$(ip -o -4 route show to default|awk '{print $5}')
-fi
+OUT_IFACES=$(ip -o -4 route show to default|awk '{print $5}')
 if [ -z "$OUT_IFACES" ]; then echo "OUT_IFACES is unset; Unable to proceed"; exit 1; fi
 IPTABLES_BAK="iptables.bak"
 
