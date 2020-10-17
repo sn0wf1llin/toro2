@@ -416,7 +416,7 @@ class Toro2:
             self.copy_system_file(sys_file=f'toro2/{dnscrypt_srv_file}', dst=f'/{dnscrypt_srv_file}')
             self.copy_system_file(sys_file=f'toro2/{dnscrypt_sok_file}', dst=f'/{dnscrypt_sok_file}')
 
-        elif get_os_release()["ID"].lower() in ["ubuntu", "linuxmint"]:
+        elif get_os_release()["ID"].lower() in ["ubuntu", "kali", "linuxmint"]:
             self.copy_system_file(sys_file=f'toro2/{dnscrypt_srv_file}', dst="/lib/systemd/system/dnscrypt-proxy.service")
             self.copy_system_file(sys_file=f'toro2/{dnscrypt_sok_file}', dst=f'/{dnscrypt_sok_file}')
 

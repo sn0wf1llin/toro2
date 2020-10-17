@@ -21,7 +21,7 @@ TOR_UID=$(getent passwd | grep -w $TOR_USERNAME | cut -d':' -f3)
 VirtualAddrNetwork=10.192.0.0/10
 TRANS_PORT=9040
 DNS_PORT=5353
-OUT_IFACES="enp3s0"
+OUT_IFACES="enp3s0 wlp0s20f wlp5s0"
 IPTABLES_BAK="iptables.bak"
 
 # save old iptables rules
