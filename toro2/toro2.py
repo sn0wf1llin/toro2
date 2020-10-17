@@ -418,7 +418,7 @@ class Toro2:
 
         elif get_os_release()["ID"].lower() in ["ubuntu", "kali", "linuxmint"]:
             self.copy_system_file(sys_file=f'toro2/{dnscrypt_srv_file}', dst="/lib/systemd/system/dnscrypt-proxy.service")
-            self.copy_system_file(sys_file=f'toro2/{dnscrypt_sok_file}', dst=f'/{dnscrypt_sok_file}')
+            self.copy_system_file(sys_file=f'toro2/{dnscrypt_sok_file}', dst='/lib/systemd/system/dnscrypt-proxy.socket')
 
         else:
             print(f'[{bgcolors.LIGHT_YELLOW_COLOR}-{bgcolors.RESET_COLOR}] Unable to copy {dnscrypt_srv_file} : {bgcolors.LIGHT_YELLOW_COLOR}not implemented for your OS release{bgcolors.RESET_COLOR} : {get_os_release()["ID"]}')
@@ -431,7 +431,7 @@ class Toro2:
         if get_os_release()["ID"].lower() == "arch":
             self.copy_system_file(sys_file=f'toro2/{privoxy_srv_file}', dst=f'/{privoxy_srv_file}')
 
-        elif get_os_release()["ID"].lower() in ["ubuntu", "linuxmint"]:
+        elif get_os_release()["ID"].lower() in ["ubuntu", "kali", "linuxmint"]:
             self.copy_system_file(sys_file=f'toro2/{privoxy_srv_file}', dst="/lib/systemd/system/privoxy.service")
 
         else:
