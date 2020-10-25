@@ -66,7 +66,7 @@ doh_servers = true
 ## Require servers defined by remote sources to satisfy specific properties
 
 # Server must support DNS security extensions (DNSSEC)
-require_dnssec = false
+require_dnssec = true
 
 # Server must not log user queries (declarative)
 require_nolog = true
@@ -196,13 +196,13 @@ cert_refresh_delay = 240
 ## Other popular options include 8.8.8.8 and 1.1.1.1.
 
 #fallback_resolver = '8.8.8.8:53'
-fallback_resolver = '1.1.1.1:53'
+fallback_resolver = '9.9.9.9:53'
 
 
 ## Never let dnscrypt-proxy try to use the system DNS settings;
 ## unconditionally use the fallback resolver.
 
-ignore_system_dns = false
+ignore_system_dns = true
 
 
 ## Maximum time (in seconds) to wait for network connectivity before

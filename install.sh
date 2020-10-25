@@ -161,6 +161,23 @@ function configure_linux() {
   $SYSTEMCTL_BIN stop avahi-daemon && $SYSTEMCTL_BIN stop avahi-daemon.socket
   $SYSTEMCTL_BIN disable avahi-daemon &&  $SYSTEMCTL_BIN disable avahi-daemon.socket
 
+  # dnscrypt-proxy configure
+  if [ ! `id -u dnscrypt-proxy` ]; then echo -e "[\e[91m!\e[0m]No dnscrypt-proxy user found.\n"; fi
+  while true ; do
+    read -p "ReCreate /var/cache/dnscrypt-proxy? [Yy/Nn]: " recr_cache_dp
+    case $recr_cache_dp in
+      [yY]* )
+        unlink /var/cache/dnscrypt-proxy
+        rm -rf /var/cache/private/dnscrypt-proxy
+        cd /var/cache && mkdir -p private/dnscrypt-proxy && ln -s private/dnscrypt-proxy dnscrypt-proxy && chown dnscrypt-proxy: /var/cache/private/dnscrypt-proxy
+        break;;
+
+      [nN]* ) echo -e "[\e[92m!\e[0m] Directory /var/cache/dnscrypt-proxy will be left as is\n"
+        break;;
+
+      * ) echo -e "[\e[91m!\e[0m] \e[93mYes\e[0m or \e[93mNo\e[0m answer required\n";
+  esac  ; done
+
   if [[ -z $foruser ]] || [[ $foruser != "root" ]]; then
     if [ ! -d $TORO2_TOR_DATADIR ]; then mkdir -p $TORO2_TOR_DATADIR; fi
     usermod -a -G toro2 `logname`

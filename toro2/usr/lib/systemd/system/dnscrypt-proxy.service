@@ -18,8 +18,8 @@ NoNewPrivileges=true
 PrivateDevices=true
 ProtectControlGroups=yes
 ProtectHome=yes
-ProtectHostname=yes
-ProtectKernelLogs=yes
+#ProtectHostname=yes
+#ProtectKernelLogs=yes
 ProtectKernelModules=yes
 ProtectKernelTunables=yes
 ProtectSystem=strict
@@ -29,7 +29,7 @@ RestrictRealtime=true
 RuntimeDirectory=dnscrypt-proxy
 StateDirectory=dnscrypt-proxy
 SystemCallArchitectures=native
-SystemCallFilter=@system-service @chown
+#SystemCallFilter=@system-service @chown
 SystemCallFilter=~@resources @privileged
 
 [Install]
