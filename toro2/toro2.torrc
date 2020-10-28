@@ -12,6 +12,7 @@ UseBridges      0
 ClientOnly 1
 SocksPort 9050
 TransPort 9040
+ControlPort 9051
 #DNSPort
 
 #Log notice file /var/log/tor/notices.log

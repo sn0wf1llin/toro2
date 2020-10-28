@@ -123,11 +123,11 @@ function configure_linux() {
 	PACMAN_CMD=$(which pacman 2>/dev/null)
 
 	if [[ ! -z $APT_GET_CMD ]]; then
-    $APT_GET_CMD update && $APT_GET_CMD install -y net-tools libevent-dev dnscrypt-proxy privoxy tor proxychains minicom
+    $APT_GET_CMD update && $APT_GET_CMD install -y net-tools libevent-dev dnscrypt-proxy privoxy tor proxychains minicom onioncircuits
 	elif [[ ! -z $YUM_CMD ]]; then
-		$YUM_CMD -y update && $YUM_CMD -y install net-tools privoxy dnscrypt-proxy tor proxychains
+		$YUM_CMD -y update && $YUM_CMD -y install net-tools privoxy dnscrypt-proxy tor proxychains onioncircuits
 	elif [[ ! -z $PACMAN_CMD ]]; then
-    $PACMAN_CMD -Su && $PACMAN_CMD -S netstat-nat dnscrypt-proxy privoxy tor proxychains
+    $PACMAN_CMD -Su && $PACMAN_CMD -S netstat-nat dnscrypt-proxy privoxy tor proxychains onioncircuits
 	else
 		echo "No package manager configured for $OS $VER"
 		exit 1
