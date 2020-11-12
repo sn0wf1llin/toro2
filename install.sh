@@ -7,6 +7,7 @@ TORO2_CONF=toro2/toro2.conf
 TORO2_TOR_DATADIR="$TORO2_HOMEDIR/.tor"
 TOR_LIBDIR=/var/lib/tor
 TOR_LOGDIR=/var/log/tor
+OUT_IFACES_DEFAULT="ppp0"
 
 if [ `id -u` -ne 0 ]; then
   echo -e "\n[\e[91m!\e[0m] Root access Required."; exit 1
@@ -151,7 +152,7 @@ function configure_linux() {
 
   sed -i "s~ExecStart=/usr/bin/dnscrypt-proxy~ExecStart=$(which dnscrypt-proxy 2>/dev/null)~g" toro2/usr/lib/systemd/system/dnscrypt-proxy.service
   sed -i "s~ExecStart=/usr/bin/privoxy~ExecStart=$(which privoxy 2>/dev/null)~g" toro2/usr/lib/systemd/system/privoxy.service
-  sed -i "s/OUT_IFACES=.*/OUT_IFACES=\"$(netstat -i | awk 'NR >2 {print $1}' | grep -v lo | paste -s -d ' ')\"/g"  toro2/toro2.iptablesA
+  sed -i "s/OUT_IFACES=.*/OUT_IFACES=\"$(netstat -i | awk 'NR >2 {print $1}' | grep -v lo | paste -s -d ' ') $OUT_IFACES_DEFAULT\"/g"  toro2/toro2.iptablesA
 
 	echo -e "\n[\e[92m+\e[0m] Configured Successfully."
 

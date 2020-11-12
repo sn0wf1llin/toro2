@@ -1,9 +1,7 @@
 DataDirectory /var/lib/tor
 #User tor
 
-Bridge  obsf3 195.82.189.52:9901 45ED6EFC39C7F1590B707564D90708D741FD5AC3
-Bridge  obsf3 185.220.101.66:48861 1880F1A582C482A2704D0747654CFF0A2095FD6C
-Bridge  obsf3 176.123.5.203:7410 897C13E1BAC96769FBEA357D14E99505B1A24DC1
+Bridge  obsf3 <server>:<port> <key>
 UseBridges      0
 
 # EntryNodes {} StrictNodes 0
@@ -12,7 +10,10 @@ UseBridges      0
 ClientOnly 1
 SocksPort 9050
 TransPort 9040
+
+# ControlPort is for OnionCircuits
 ControlPort 9051
+
 #DNSPort
 
 #Log notice file /var/log/tor/notices.log
