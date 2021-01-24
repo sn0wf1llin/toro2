@@ -159,8 +159,8 @@ function configure_linux() {
   if [ -z $PYTHON3_BIN ]; then echo -e "[\e[91m!\e[0m] python3 required\n[\e[91m!\e[0m] Install python3 and restart the installation"; exit 1; fi
   $PYTHON3_BIN toro2/toro2.py installnobackup
 
-  $SYSTEMCTL_BIN stop avahi-daemon && $SYSTEMCTL_BIN stop avahi-daemon.socket
-  $SYSTEMCTL_BIN disable avahi-daemon &&  $SYSTEMCTL_BIN disable avahi-daemon.socket
+  #$SYSTEMCTL_BIN stop avahi-daemon && $SYSTEMCTL_BIN stop avahi-daemon.socket
+  #$SYSTEMCTL_BIN disable avahi-daemon && $SYSTEMCTL_BIN disable avahi-daemon.socket
 
   # dnscrypt-proxy configure
   if [ ! `id -u dnscrypt-proxy` ]; then echo -e "[\e[91m!\e[0m]No dnscrypt-proxy user found.\n"; fi
