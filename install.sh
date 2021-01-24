@@ -171,10 +171,10 @@ function configure_linux() {
   	#$SYSTEMCTL_BIN disable avahi-daemon && $SYSTEMCTL_BIN disable avahi-daemon.socket
 
   	# dnscrypt-proxy configure
-  	local DNSCRYPT_PROXY_USER=$(cat /lib/systemd/system/dnscrypt-proxy.service|grep User|awk -F "=" '{print $2}')
-
+  	#local DNSCRYPT_PROXY_USER=$(cat /lib/systemd/system/dnscrypt-proxy.service|grep User|awk -F "=" '{print $2}')
+  	local DNSCRYPT_PROXY_USER="_dnscrypt-proxy"
   	id -u $DNSCRYPT_PROXY_USER 2>/dev/null 1>&2
-  	if [ $? -eq 1 ]; then echo -e "[\e[91m!\e[0m]No $DNSCRYPT_PROXY_USER user found.\n"; exit 1; fi
+  	if [ $? -eq 1 ]; then echo -e "[\e[91m!\e[0m] No $DNSCRYPT_PROXY_USER user found.\n"; exit 1; fi
 
   	while true ; do
     	read -p "ReCreate /var/cache/dnscrypt-proxy? [Yy/Nn]: " recr_cache_dp

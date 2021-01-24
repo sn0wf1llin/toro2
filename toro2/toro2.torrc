@@ -1,7 +1,7 @@
 DataDirectory /var/lib/tor
 #User tor
 
-Bridge  obsf3 <server>:<port> <key>
+#Bridge  obsf3 <server>:<port> <key>
 UseBridges      0
 
 # EntryNodes {} StrictNodes 0
