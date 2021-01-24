@@ -171,14 +171,17 @@ function configure_linux() {
   	#$SYSTEMCTL_BIN disable avahi-daemon && $SYSTEMCTL_BIN disable avahi-daemon.socket
 
   	# dnscrypt-proxy configure
-  	if [ ! `id -u dnscrypt-proxy` ]; then echo -e "[\e[91m!\e[0m]No dnscrypt-proxy user found.\n"; fi
+  	local DNSCRYPT_PROXY_USER=$(cat /lib/systemd/system/dnscrypt-proxy.service|grep User|awk -F "=" '{print $2}')
+
+  	id -u $DNSCRYPT_PROXY_USER 2>/dev/null 1>&2
+  	if [ $? -eq 1 ]; then echo -e "[\e[91m!\e[0m]No $DNSCRYPT_PROXY_USER user found.\n"; exit 1; fi
+
   	while true ; do
     	read -p "ReCreate /var/cache/dnscrypt-proxy? [Yy/Nn]: " recr_cache_dp
     	case $recr_cache_dp in
       	[yY]* )
-        	unlink /var/cache/dnscrypt-proxy
         	rm -rf /var/cache/private/dnscrypt-proxy
-        	cd /var/cache && mkdir -p private/dnscrypt-proxy && ln -s private/dnscrypt-proxy dnscrypt-proxy && chown dnscrypt-proxy: /var/cache/private/dnscrypt-proxy
+        	cd /var/cache && mkdir -p private/dnscrypt-proxy && ln -s private/dnscrypt-proxy dnscrypt-proxy && chown $DNSCRYPT_PROXY_USER: /var/cache/private/dnscrypt-proxy
         	break;;
 
       	[nN]* ) echo -e "[\e[92m!\e[0m] Directory /var/cache/dnscrypt-proxy will be left as is\n"
@@ -194,8 +197,8 @@ function configure_linux() {
     	chown -R $TORO2_USER: $TORO2_TOR_DATADIR
     	chmod -R 770 $TORO2_TOR_DATADIR
     	sed -i "s!DataDirectory.*!DataDirectory $TORO2_TOR_DATADIR!g" $TORO2_HOMEDIR/toro2/toro2.torrc
-    	if [ -f "/etc/sudoers.d/toro2" ]; then rm -f /etc/sudoers.d/toro2; fi
-    	echo "%toro2 ALL=(ALL) NOPASSWD: $(which kill) tor, $SYSTEMCTL_BIN start tor, $SYSTEMCTL_BIN stop tor, $SYSTEMCTL_BIN start privoxy, $SYSTEMCTL_BIN stop privoxy, $SYSTEMCTL_BIN status tor, $SYSTEMCTL_BIN status privoxy, $SYSTEMCTL_BIN start dnscrypt-proxy, $SYSTEMCTL_BIN stop dnscrypt-proxy, $SYSTEMCTL_BIN status dnscrypt-proxy, $TOR_BIN, $SYSTEMCTL_BIN start dnsmasq, $SYSTEMCTL_BIN stop dnsmasq, $SYSTEMCTL_BIN status dnsmasq" > /etc/sudoers.d/toro2
+    	#if [ -f "/etc/sudoers.d/toro2" ]; then rm -f /etc/sudoers.d/toro2; fi
+    	#echo "%toro2 ALL=(ALL) NOPASSWD: $(which kill) tor, $SYSTEMCTL_BIN start tor, $SYSTEMCTL_BIN stop tor, $SYSTEMCTL_BIN start privoxy, $SYSTEMCTL_BIN stop privoxy, $SYSTEMCTL_BIN status tor, $SYSTEMCTL_BIN status privoxy, $SYSTEMCTL_BIN start dnscrypt-proxy, $SYSTEMCTL_BIN stop dnscrypt-proxy, $SYSTEMCTL_BIN status dnscrypt-proxy, $TOR_BIN, $SYSTEMCTL_BIN start dnsmasq, $SYSTEMCTL_BIN stop dnsmasq, $SYSTEMCTL_BIN status dnsmasq" > /etc/sudoers.d/toro2
   	else
     	sed -i 's/#User/User/g' $TORO2_HOMEDIR/toro2/toro2.torrc
   	fi
