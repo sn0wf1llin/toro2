@@ -78,8 +78,10 @@ function configure_windows() {
 function which_req_bin() {
 	local REQ_BIN_NAME="$1"
 	local REQ_BIN=$(which $REQ_BIN_NAME)
-	if [[ -z $REQ_BIN ]]; then myecho -e "\t\e[91mNot found!\e[0m : \e[93m$REQ_BIN_NAME\e[0m" ; exit 1;
-else myecho -e "  [\e[92m!\e[0m] \e[92mFound binary\e[0m : \e[39m$REQ_BIN_NAME\e[0m" ; eval "$(echo $REQ_BIN_NAME | tr '-' '_' | tr '[:lower:]' '[:upper:]')_BIN=$REQ_BIN"
+	if [[ -z $REQ_BIN ]]; then 
+		myecho -e "\t\e[91mNot found!\e[0m : \e[93m$REQ_BIN_NAME\e[0m" ; exit 1;
+	else 
+		myecho -e "  [\e[92m!\e[0m] \e[92mFound binary\e[0m : \e[39m$REQ_BIN_NAME\e[0m" ; eval "$(echo $REQ_BIN_NAME | tr '-' '_' | tr '[:lower:]' '[:upper:]')_BIN=$REQ_BIN"
 	fi
 }
 
@@ -124,11 +126,14 @@ function configure_linux() {
 	PACMAN_CMD=$(which pacman 2>/dev/null)
 
 	if [[ ! -z $APT_GET_CMD ]]; then
-    $APT_GET_CMD update && $APT_GET_CMD install -y net-tools libevent-dev dnscrypt-proxy privoxy tor proxychains minicom onioncircuits
+    	$APT_GET_CMD update && \
+    	$APT_GET_CMD install -y net-tools libevent-dev dnscrypt-proxy privoxy tor proxychains minicom onioncircuits
 	elif [[ ! -z $YUM_CMD ]]; then
-		$YUM_CMD -y update && $YUM_CMD -y install net-tools privoxy dnscrypt-proxy tor proxychains onioncircuits
+		$YUM_CMD -y update && \
+		$YUM_CMD -y install net-tools privoxy dnscrypt-proxy tor proxychains onioncircuits
 	elif [[ ! -z $PACMAN_CMD ]]; then
-    $PACMAN_CMD -Su && $PACMAN_CMD -S netstat-nat dnscrypt-proxy privoxy tor proxychains onioncircuits
+    	$PACMAN_CMD -Su && \
+    	$PACMAN_CMD -S netstat-nat dnscrypt-proxy privoxy tor proxychains onioncircuits
 	else
 		echo "No package manager configured for $OS $VER"
 		exit 1
@@ -150,53 +155,61 @@ function configure_linux() {
 
 	make_toro2_conf
 
-  sed -i "s~ExecStart=/usr/bin/dnscrypt-proxy~ExecStart=$(which dnscrypt-proxy 2>/dev/null)~g" toro2/usr/lib/systemd/system/dnscrypt-proxy.service
-  sed -i "s~ExecStart=/usr/bin/privoxy~ExecStart=$(which privoxy 2>/dev/null)~g" toro2/usr/lib/systemd/system/privoxy.service
-  sed -i "s/OUT_IFACES=.*/OUT_IFACES=\"$(netstat -i | awk 'NR >2 {print $1}' | grep -v lo | paste -s -d ' ') $OUT_IFACES_DEFAULT\"/g"  toro2/toro2.iptablesA
+  	sed -i "s~ExecStart=/usr/bin/dnscrypt-proxy~ExecStart=$(which dnscrypt-proxy 2>/dev/null)~g" toro2/usr/lib/systemd/system/dnscrypt-proxy.service
+  	sed -i "s~ExecStart=/usr/bin/privoxy~ExecStart=$(which privoxy 2>/dev/null)~g" toro2/usr/lib/systemd/system/privoxy.service
+  	sed -i "s/OUT_IFACES=.*/OUT_IFACES=\"$(netstat -i | awk 'NR >2 {print $1}' | grep -v lo | paste -s -d ' ') $OUT_IFACES_DEFAULT\"/g"  toro2/toro2.iptablesA
 
 	echo -e "\n[\e[92m+\e[0m] Configured Successfully."
 
-  if [ -z $PYTHON3_BIN ]; then echo -e "[\e[91m!\e[0m] python3 required\n[\e[91m!\e[0m] Install python3 and restart the installation"; exit 1; fi
-  $PYTHON3_BIN toro2/toro2.py installnobackup
+  	if [ -z $PYTHON3_BIN ]; then 
+  		echo -e "[\e[91m!\e[0m] python3 required\n[\e[91m!\e[0m] Install python3 and restart the installation"; exit 1; 
+  	fi
+  	
+  	$PYTHON3_BIN toro2/toro2.py installnobackup
 
-  #$SYSTEMCTL_BIN stop avahi-daemon && $SYSTEMCTL_BIN stop avahi-daemon.socket
-  #$SYSTEMCTL_BIN disable avahi-daemon && $SYSTEMCTL_BIN disable avahi-daemon.socket
+  	#$SYSTEMCTL_BIN stop avahi-daemon && $SYSTEMCTL_BIN stop avahi-daemon.socket
+  	#$SYSTEMCTL_BIN disable avahi-daemon && $SYSTEMCTL_BIN disable avahi-daemon.socket
 
-  # dnscrypt-proxy configure
-  if [ ! `id -u dnscrypt-proxy` ]; then echo -e "[\e[91m!\e[0m]No dnscrypt-proxy user found.\n"; fi
-  while true ; do
-    read -p "ReCreate /var/cache/dnscrypt-proxy? [Yy/Nn]: " recr_cache_dp
-    case $recr_cache_dp in
-      [yY]* )
-        unlink /var/cache/dnscrypt-proxy
-        rm -rf /var/cache/private/dnscrypt-proxy
-        cd /var/cache && mkdir -p private/dnscrypt-proxy && ln -s private/dnscrypt-proxy dnscrypt-proxy && chown dnscrypt-proxy: /var/cache/private/dnscrypt-proxy
-        break;;
+  	# dnscrypt-proxy configure
+  	if [ ! `id -u dnscrypt-proxy` ]; then echo -e "[\e[91m!\e[0m]No dnscrypt-proxy user found.\n"; fi
+  	while true ; do
+    	read -p "ReCreate /var/cache/dnscrypt-proxy? [Yy/Nn]: " recr_cache_dp
+    	case $recr_cache_dp in
+      	[yY]* )
+        	unlink /var/cache/dnscrypt-proxy
+        	rm -rf /var/cache/private/dnscrypt-proxy
+        	cd /var/cache && mkdir -p private/dnscrypt-proxy && ln -s private/dnscrypt-proxy dnscrypt-proxy && chown dnscrypt-proxy: /var/cache/private/dnscrypt-proxy
+        	break;;
 
-      [nN]* ) echo -e "[\e[92m!\e[0m] Directory /var/cache/dnscrypt-proxy will be left as is\n"
-        break;;
+      	[nN]* ) echo -e "[\e[92m!\e[0m] Directory /var/cache/dnscrypt-proxy will be left as is\n"
+        	break;;
 
-      * ) echo -e "[\e[91m!\e[0m] \e[93mYes\e[0m or \e[93mNo\e[0m answer required\n";
-  esac  ; done
+      	* ) echo -e "[\e[91m!\e[0m] \e[93mYes\e[0m or \e[93mNo\e[0m answer required\n";
+  		esac  ; 
+  	done
 
-  if [[ -z $foruser ]] || [[ $foruser != "root" ]]; then
-    if [ ! -d $TORO2_TOR_DATADIR ]; then mkdir -p $TORO2_TOR_DATADIR; fi
-    usermod -a -G toro2 `logname`
-    chown -R $TORO2_USER: $TORO2_TOR_DATADIR
-    chmod -R 770 $TORO2_TOR_DATADIR
-    sed -i "s!DataDirectory.*!DataDirectory $TORO2_TOR_DATADIR!g" $TORO2_HOMEDIR/toro2/toro2.torrc
-    if [ -f "/etc/sudoers.d/toro2" ]; then rm -f /etc/sudoers.d/toro2; fi
-    echo "%toro2 ALL=(ALL) NOPASSWD: $(which kill) tor, $SYSTEMCTL_BIN start tor, $SYSTEMCTL_BIN stop tor, $SYSTEMCTL_BIN start privoxy, $SYSTEMCTL_BIN stop privoxy, $SYSTEMCTL_BIN status tor, $SYSTEMCTL_BIN status privoxy, $SYSTEMCTL_BIN start dnscrypt-proxy, $SYSTEMCTL_BIN stop dnscrypt-proxy, $SYSTEMCTL_BIN status dnscrypt-proxy, $TOR_BIN, $SYSTEMCTL_BIN start dnsmasq, $SYSTEMCTL_BIN stop dnsmasq, $SYSTEMCTL_BIN status dnsmasq" > /etc/sudoers.d/toro2
-  else
-    sed -i 's/#User/User/g' $TORO2_HOMEDIR/toro2/toro2.torrc
-  fi
+  	if [[ -z $foruser ]] || [[ $foruser != "root" ]]; then
+    	if [ ! -d $TORO2_TOR_DATADIR ]; then mkdir -p $TORO2_TOR_DATADIR; fi
+    	usermod -a -G toro2 `logname`
+    	chown -R $TORO2_USER: $TORO2_TOR_DATADIR
+    	chmod -R 770 $TORO2_TOR_DATADIR
+    	sed -i "s!DataDirectory.*!DataDirectory $TORO2_TOR_DATADIR!g" $TORO2_HOMEDIR/toro2/toro2.torrc
+    	if [ -f "/etc/sudoers.d/toro2" ]; then rm -f /etc/sudoers.d/toro2; fi
+    	echo "%toro2 ALL=(ALL) NOPASSWD: $(which kill) tor, $SYSTEMCTL_BIN start tor, $SYSTEMCTL_BIN stop tor, $SYSTEMCTL_BIN start privoxy, $SYSTEMCTL_BIN stop privoxy, $SYSTEMCTL_BIN status tor, $SYSTEMCTL_BIN status privoxy, $SYSTEMCTL_BIN start dnscrypt-proxy, $SYSTEMCTL_BIN stop dnscrypt-proxy, $SYSTEMCTL_BIN status dnscrypt-proxy, $TOR_BIN, $SYSTEMCTL_BIN start dnsmasq, $SYSTEMCTL_BIN stop dnsmasq, $SYSTEMCTL_BIN status dnsmasq" > /etc/sudoers.d/toro2
+  	else
+    	sed -i 's/#User/User/g' $TORO2_HOMEDIR/toro2/toro2.torrc
+  	fi
 
-  if [ -z `systemctl is-active systemd-resolved | grep -i inactive` ]; then
-    systemctl stop systemd-resolved && systemctl disable systemd-resolved
-  fi
-  if [ -f /etc/resolv.conf ]; then
-    if [ ! -z `file /etc/resolv.conf | grep "symbolic link"` ]; then unlink /etc/resolv.conf ; fi
-  else chattr -i /etc/resolv.conf && rm -f /etc/resolv.conf ; fi
+  	if [ -z `systemctl is-active systemd-resolved | grep -i inactive` ]; then 
+  		systemctl stop systemd-resolved && systemctl disable systemd-resolved; 
+  	fi
+
+  	if [ -f /etc/resolv.conf ]; then
+    	if [[ ! -z `file /etc/resolv.conf | grep "symbolic link"` ]]; then unlink /etc/resolv.conf ; fi
+  	else 
+  		chattr -i /etc/resolv.conf && rm -f /etc/resolv.conf ; 
+  	fi
+
   echo -e "nameserver ::1\nnameserver 127.0.0.1\noptions edns0 single-request-reopen" > /etc/resolv.conf
   chattr +i /etc/resolv.conf
 
