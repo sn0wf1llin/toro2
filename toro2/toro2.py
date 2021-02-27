@@ -14,6 +14,7 @@ import ast
 import re
 import csv
 import grp
+import pwd
 
 
 class bgcolors:
@@ -115,6 +116,10 @@ def check_already_installed(f):
 
 class Toro2:
     def __init__(self, config_file_name="toro2.conf"):
+        # Var to store if naked() func used before
+        # to manage files responsible for anonimity etc
+        self.iamnaked = False
+
         self.config_file_name = config_file_name
         self.files_to_backup = list(map(lambda i: i.format(os.getenv("HOME")),
                                 list(filter(os.path.exists, ["{}/.tor", "{}/.bashrc",
@@ -140,7 +145,7 @@ class Toro2:
 
         try:
             int(subprocess.getoutput("id -u {}".format(self.username)))
-        except ValueError:
+        except Exception as e:
             self.user("toro2", "create")
 
     @staticmethod
@@ -151,7 +156,7 @@ class Toro2:
     def banner():
         banner = """
 
-    --------[ version 2.1.0        hh15461 ]--------
+    --------[ version 2.2.0        hh15461 ]--------
     --------[ Breathe freely with    TorO2 ]--------
 
     ###############################################
@@ -346,6 +351,20 @@ class Toro2:
 
     @check_already_installed
     def start(self):
+        if self.iamnaked:
+            # naked() previously used!
+            # files-anonimity providers must be restored!
+            # /etc/resolv.conf for now
+            try:
+                subprocess.call(f'{self.chattr} -i /etc/resolv.conf', shell=True)
+                with open("/etc/resolv.conf", 'w') as f:
+                    f.write("nameserver ::1\nnameserver 127.0.0.1\noptions edns0 single-request-reopen")
+                subprocess.call(f'{self.chattr} +i /etc/resolv.conf', shell=True)
+                self.iamnaked = False
+
+            except Exception as e:
+                print(f'[{bgcolors.RED_COLOR}x{bgcolors.RESET_COLOR}] Unable to hide your ass, dude. Check logs \n{e}')
+
         def start_tor():
             if self.tor_as_process:
                 command = "{} -f {}/toro2/toro2.torrc".format(self.tor, self.toro2_homedir)
@@ -451,24 +470,41 @@ class Toro2:
         self.copy_system_file(sys_file=f'toro2/{dnsm_conf}', dst=f'/{dnsm_conf}')
 
     def user(self, username, action):
-        if action == "create":
-            #subprocess.call("groupadd -r {}".format(username), shell=True)
-            subprocess.call("useradd --system --shell /bin/false --no-create-home {}".format(username), shell=True)
-            self.username = username
-            self.uid = int(subprocess.getoutput("id -u {}".format(self.username)))
-            self.gid = int(subprocess.getoutput("id -g {}".format(self.username)))
+        if action == "check":
+            try:
+                pwd.getpwnam(username)
+                return True
+            except KeyError:
+                return False
+
+        elif action == "create":
+            if not self.user(username, "check"):
+                self.username = username
+                #subprocess.call("groupadd -r {}".format(username), shell=True)
+                subprocess.call("useradd --system --shell /bin/false --no-create-home {}".format(username), shell=True)
+                self.uid = int(subprocess.getoutput("id -u {}".format(self.username)))
+                self.gid = int(subprocess.getoutput("id -g {}".format(self.username)))
 
         elif action == "delete":
-            subprocess.call("userdel {}".format(username), shell=True)
-            try:
-                grp.getgrnam(username)
-                subprocess.call("groupdel {}".format(username), shell=True)
-            except KeyError: pass
+            if self.user(username, "check"):
+                subprocess.call("userdel {}".format(username), shell=True)
+                try:
+                    grp.getgrnam(username)
+                    subprocess.call("groupdel {}".format(username), shell=True)
+                except KeyError:
+                    pass
             self.username = None
+
         elif action == "getuid":
-            return int(subprocess.getoutput("id -u {}".format(self.username)))
+            if self.user(username, "check"):
+                return int(subprocess.getoutput("id -u {}".format(self.username)))
+            return None
+
         elif action == "getgid":
-            return int(subprocess.getoutput("id -g {}".format(self.username)))
+            try:
+                return int(subprocess.getoutput("id -g {}".format(self.username)))
+            except Exception as e:
+                return None
 
     @check_already_installed
     def install(self, backup_osfiles_ultimate=True):
@@ -498,7 +534,7 @@ class Toro2:
                 try:
                     serv_install_func = getattr(self, '_install_{}'.format(rs.replace('-', '_')))
                     serv_install_func()
-
+                    self._manage_service(rs, "disable")
                 except Exception as e:
                     print(f'[{bgcolors.RED_COLOR}x{bgcolors.RESET_COLOR}] Can\'t install {bgcolors.LIGHT_YELLOW_COLOR}{rs}{bgcolors.RESET_COLOR} : possible absense {bgcolors.LIGHT_MAGENTA_COLOR}{"_install_{}".format(rs.replace("-", "_"))}{bgcolors.RESET_COLOR} installation function : {e}')
 
@@ -509,8 +545,8 @@ class Toro2:
             # os.chown(self.toro2_binary, self.uid, self.gid)
             os.chown(self.toro2_homedir, self.user(self.username, 'getuid'), self.user(self.username, 'getgid'))
             subprocess.call("chown {}: {}/*".format(self.username, self.toro2_homedir), shell=True)
-            subprocess.call("chown root {}/toro2/toro2.iptables*".format(self.toro2_homedir), shell=True)
-            subprocess.call("chmod u+s {}/toro2/toro2.iptables*".format(self.toro2_homedir), shell=True)
+            #subprocess.call("chown root {}/toro2/toro2.iptables*".format(self.toro2_homedir), shell=True)
+            #subprocess.call("chmod u+s {}/toro2/toro2.iptables*".format(self.toro2_homedir), shell=True)
 
         except Exception as e:
             print(f'[{bgcolors.RED_COLOR}x{bgcolors.RESET_COLOR}] Unable to set attrs for {self.toro2_homedir}/* {bgcolors.LIGHT_YELLOW_COLOR}or{bgcolors.RESET_COLOR} {self.toro2_homedir}/toro2/toro2.iptables* : {e}')
@@ -570,13 +606,28 @@ class Toro2:
                 print(f'[{bgcolors.GREEN_COLOR}+{bgcolors.RESET_COLOR}] Executable {self.toro2_binary} removed')
 
             #shutil.rmtree("/opt/toro2")
-            self.user("toro2", "delete")
+            self.user(self.username, "delete")
+            subprocess.call(f'{self.iptables} -P OUTPUT ACCEPT', shell=True)
+            subprocess.call(f'{self.chattr} -i /etc/resolv.conf', shell=True)
+            with open("/etc/resolv.conf", 'w') as f:
+                f.write("nameserver 1.1.1.1")
 
         except FileNotFoundError as e:
             print(f'[{bgcolors.LIGHT_CYAN_COLOR}+/-{bgcolors.RESET_COLOR}] toro2 not installed\n{e}')
 
         except Exception as e:
             print(f'[{bgcolors.RED_COLOR}x{bgcolors.RESET_COLOR}] {e}')
+
+    def naked(self):
+        self.iamnaked = True
+        try:
+            subprocess.call(f'{self.iptables} -P OUTPUT ACCEPT', shell=True)
+            subprocess.call(f'{self.chattr} -i /etc/resolv.conf', shell=True)
+            with open("/etc/resolv.conf", 'w') as f:
+                f.write("nameserver 1.1.1.1")
+
+        except Exception as e:
+            print(f'[{bgcolors.RED_COLOR}x{bgcolors.RESET_COLOR}] Unable to restore files to make you naked \n{e}')
 
     @check_already_installed
     def _configure_tor(self):
@@ -609,6 +660,7 @@ class Toro2:
 
         if self.config_file_name:
             rc = self._read_config_file()
+
             self.config.update(rc)
             for k, v in self.config.items():
                 setattr(self, k, v)
@@ -626,22 +678,29 @@ class Toro2:
             "{}/toro2/{}".format(self.toro2_homedir, self.config_file_name),
             "{}/{}".format(os.getcwd(), self.config_file_name),
             "{}/toro2/{}".format(os.getcwd(), self.config_file_name)]))
-        try:
-            with open(list(cfile_path)[0], 'r') as config:
-                for cline in config.readlines():
-                    li = cline.strip()
-                    if li.startswith("#"):
-                        continue
-                    data = li.split("=")
-                    val = data[1]
-                    if '[' in val:
-                        val = ast.literal_eval(val.strip())
 
-                    config_dict[data[0]] = val
+        config_used = None
+        for ci in range(len(cfile_path)):
+            try:
+                with open(cfile_path[ci], 'r') as config:
+                    for cline in config.readlines():
+                        li = cline.strip()
+                        if li.startswith("#"):
+                            continue
+                        data = li.split("=")
+                        val = data[1]
+                        if '[' in val:
+                            val = ast.literal_eval(val.strip())
+                        config_dict[data[0]] = val
+                config_used = cfile_path[ci]
+                #print(f'[{bgcolors.LIGHT_GREEN_COLOR}+{bgcolors.RESET_COLOR}] Read config from {config_used}')
+                return config_dict
 
-        except Exception as e:
-            print(f'[{bgcolors.RED_COLOR}x{bgcolors.RESET_COLOR}] Unable to read config from {cfile_path} : {e}')
+            except Exception as e:
+                print(f'[{bgcolors.YELLOW_COLOR}.{bgcolors.RESET_COLOR}] Unable to read config from {config_used} : {e}')
+                ci += 1
 
+        print(f'[{bgcolors.RED_COLOR}x{bgcolors.RESET_COLOR}] Unable to find config file in {cfile_path}.')
         return config_dict
 
     def _write_config_file(self, config_file_name):
@@ -680,6 +739,10 @@ if __name__ == "__main__":
             toro2.os_fully_integrate()
         elif sys.argv[1] == "install":
             toro2.install()
+        # naked is for disabling iptables rules & restore /etc/resolv.conf to
+        # give UNSAFE access to network IF YOU NEED IT NOW
+        elif sys.argv[1] == "naked":
+            toro2.naked()
         elif sys.argv[1] == "installnobackup":
             toro2.install(backup_osfiles_ultimate=False)
         elif sys.argv[1] == "uninstall":
