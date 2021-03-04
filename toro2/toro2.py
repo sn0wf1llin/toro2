@@ -77,6 +77,7 @@ Usage: toro2 [start] [stop] [switch] [install] [uninstall]
         install              Install toro2 app & files
         uninstall            Uinstall toro2 app & files
         status               Get state of tor & services
+        naked                Disables TorO2 protection until next start
         integrate            Integrate toro2 installation with OS
         installnobackup      Same as INSTALL, with no backup system files
         iptablessave         Save iptables configuration
@@ -87,6 +88,8 @@ Usage: toro2 [start] [stop] [switch] [install] [uninstall]
 TORO2_PATH = "/etc"
 TORO2_HOMEDIR = "{}/toro2".format(TORO2_PATH)
 toro2_binary = "/usr/bin/toro2"
+# PRIVOXY_ADDR = '127.0.0.1:8118'
+# TOR_ADDR = '127.0.0.1:9050'
 
 
 def get_os_release():
@@ -150,13 +153,16 @@ class Toro2:
 
     @staticmethod
     def get_system_user():
-        return subprocess.getoutput('id -un')
+    	res = subprocess.Popen('who', shell=True, stdout=subprocess.PIPE)
+    	return str(res.stdout.read().split()[0])
+
+        #return subprocess.getoutput('id -un')
 
     @staticmethod
     def banner():
         banner = """
 
-    --------[ version 2.2.0        hh15461 ]--------
+    --------[ version 2.3.0        hh15461 ]--------
     --------[ Breathe freely with    TorO2 ]--------
 
     ###############################################
@@ -365,6 +371,11 @@ class Toro2:
             except Exception as e:
                 print(f'[{bgcolors.RED_COLOR}x{bgcolors.RESET_COLOR}] Unable to hide your ass, dude. Check logs \n{e}')
 
+        # def set_environment_proxies():
+        #     for sp in ['ftp_proxy', 'https_proxy', 'telnet_proxy', 'http_proxy']:
+        #         os.environ[sp] = PRIVOXY_ADDR
+        #         os.environ[sp.upper()] = PRIVOXY_ADDR
+
         def start_tor():
             if self.tor_as_process:
                 command = "{} -f {}/toro2/toro2.torrc".format(self.tor, self.toro2_homedir)
@@ -381,6 +392,8 @@ class Toro2:
             else:
                 # tor is run as service
                 self._manage_service("tor", "start")
+
+        # set_environment_proxies()
 
         if not os.path.exists(self.pidfile):
             with open(self.pidfile, 'w') as f: f.write(str(os.getpid()))

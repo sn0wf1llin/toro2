@@ -54,7 +54,7 @@ max_clients = 250
 ipv4_servers = true
 
 # Use servers reachable over IPv6 -- Do not enable if you don't have IPv6 connectivity
-ipv6_servers = false
+ipv6_servers = true
 
 # Use servers implementing the DNSCrypt protocol
 dnscrypt_servers = true
@@ -351,7 +351,7 @@ cache_neg_max_ttl = 600
   ## Path to the query log file (absolute, or relative to the same directory as the executable file)
   ## Can be /dev/stdout to log to the standard output (and set log_files_max_size to 0)
 
-  # file = '/var/log/dnscrypt-proxy/query.log'
+  file = '/var/log/dnscrypt-proxy/query.log'
 
 
   ## Query log format (currently supported: tsv and ltsv)
@@ -377,7 +377,7 @@ cache_neg_max_ttl = 600
 
   ## Path to the query log file (absolute, or relative to the same directory as the executable file)
 
-  # file = '/var/log/dnscrypt-proxy/nx.log'
+  file = '/var/log/dnscrypt-proxy/nx.log'
 
 
   ## Query log format (currently supported: tsv and ltsv)
@@ -407,12 +407,12 @@ cache_neg_max_ttl = 600
 
   ## Path to the file of blocking rules (absolute, or relative to the same directory as the executable file)
 
-  # blacklist_file = '/etc/dnscrypt-proxy/blacklist.txt'
+  #blacklist_file = '/etc/dnscrypt-proxy/blacklist.txt'
 
 
   ## Optional path to a file logging blocked queries
 
-  # log_file = '/var/log/dnscrypt-proxy/blocked.log'
+  #log_file = '/var/log/dnscrypt-proxy/blocked.log'
 
 
   ## Optional log format: tsv or ltsv (default: tsv)
@@ -463,12 +463,12 @@ cache_neg_max_ttl = 600
 
   ## Path to the file of whitelisting rules (absolute, or relative to the same directory as the executable file)
 
-  # whitelist_file = '/etc/dnscrypt-proxy/whitelist.txt'
+  #whitelist_file = '/etc/dnscrypt-proxy/whitelist.txt'
 
 
   ## Optional path to a file logging whitelisted queries
 
-  # log_file = '/var/log/dnscrypt-proxy/whitelisted.log'
+  #log_file = '/var/log/dnscrypt-proxy/whitelisted.log'
 
 
   ## Optional log format: tsv or ltsv (default: tsv)

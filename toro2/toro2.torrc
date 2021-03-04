@@ -1,26 +1,35 @@
 DataDirectory /var/lib/tor
 #User tor
 
-#Bridge  obsf3 <server>:<port> <key>
-UseBridges      0
+ClientTransportPlugin obfs3,obfs4 exec /usr/bin/obfs4proxy -enableLogging=true -logLevel DEBUG managed
+#Bridge obfs4 IP:Port Fingerprint Cert
+UseBridges 0
 
-# EntryNodes {} StrictNodes 0
-# ExiteNodes {} StrictNodes 0
+#EntryNodes {} StrictNodes 0
+#ExiteNodes {} StrictNodes 0
+
+#ControlSocket /var/lib/tor/control_socket
+#ControlSocketsGroupWritable 1
+#DataDirectoryGroupReadable 1
+#CacheDirectoryGroupReadable 1
 
 ClientOnly 1
 SocksPort 9050
 TransPort 9040
 
-# ControlPort is for OnionCircuits
+# ControlPort for OnionCircuits
 ControlPort 9051
 
-#DNSPort
+# DNSPort
 
 #Log notice file /var/log/tor/notices.log
+
 # Send every possible message to /var/log/tor/debug.log
 #Log debug file /var/log/tor/debug.log
+
 # Use the system log instead of Tor's logfiles
 Log notice stdout
+
 # To send all messages to stderr:
 #Log debug stderr
 
