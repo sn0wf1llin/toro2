@@ -150,14 +150,18 @@ configure_linux() {
 	PACMAN_CMD=$(which pacman 2>/dev/null)
 
 	if [[ ! -z $APT_GET_CMD ]]; then
-    	$APT_GET_CMD update && \
-    	$APT_GET_CMD install -y net-tools libevent-dev dnscrypt-proxy privoxy tor proxychains minicom onioncircuits obfs4proxy
+    $APT_GET_CMD update && \
+    $APT_GET_CMD install -y net-tools libevent-dev \
+      dnscrypt-proxy privoxy tor proxychains minicom \
+      onioncircuits obfs4proxy
 	elif [[ ! -z $YUM_CMD ]]; then
 		$YUM_CMD -y update && \
-		$YUM_CMD -y install net-tools privoxy dnscrypt-proxy tor proxychains onioncircuits obfsproxy obfs4proxy
+		$YUM_CMD -y install net-tools privoxy dnscrypt-proxy \
+      tor proxychains onioncircuits obfsproxy obfs4proxy
 	elif [[ ! -z $PACMAN_CMD ]]; then
-    	$PACMAN_CMD -Su && \
-    	$PACMAN_CMD -S netstat-nat dnscrypt-proxy privoxy tor proxychains onioncircuits obfsproxy obfs4proxy
+    $PACMAN_CMD -Su && \
+    $PACMAN_CMD -S netstat-nat dnscrypt-proxy privoxy \
+      tor proxychains onioncircuits obfsproxy obfs4proxy
 	else
 		echo "[\e[92mx\e[0m] No package manager configured for $OS $VER"
 		exit 1
@@ -179,6 +183,18 @@ configure_linux() {
   sed -i "s~ExecStart=/usr/bin/privoxy~ExecStart=$(which privoxy 2>/dev/null)~g" toro2/usr/lib/systemd/system/privoxy.service
   sed -i "s/OUT_IFACES=.*/OUT_IFACES=\"$(netstat -i | awk 'NR >2 {print $1}' | grep -v lo | paste -s -d ' ') $OUT_IFACES_DEFAULT\"/g"  toro2/toro2.iptablesA
 
+  # toro2 dns port setup
+  local dns_port=$(cat toro2/toro2.conf |grep -i "dnscrypt_proxy_port"|awk -F '=' '{print $2}')
+  sed -i "s/DNS_PORT=.*/DNS_PORT=$dns_port/"  toro2/toro2.iptablesA
+  sed -i "s/listen_addresses.*/listen_addresses = ['127.0.0.1:$dns_port', '[::1]:$dns_port']/" toro2/etc/dnscrypt-proxy/dnscrypt-proxy.toml
+
+  sed -i "s/port=.*/port=$dns_port/" toro2/etc/dnsmasq.conf
+
+  # toro2 tor trans port setup
+  local trans_port=$(cat toro2/toro2.conf |grep -i "tor_trans_port"|awk -F '=' '{print $2}')
+  sed -i "s/TRANS_PORT=.*/TRANS_PORT=$trans_port/" toro2/toro2.iptablesA
+  sed -i "s/TransPort.*/TransPort $trans_port/" toro2/toro2.torrc
+
   # required services must be 0. stopped 1. disabled by default
   # which gives user an opportunity to run whole toro2 with all servcies
   # only when she explicitly runs it from terminal as 'toro2 start'
@@ -188,8 +204,7 @@ configure_linux() {
     check_service_exists $req_srv
     if [[ $? -eq 1 ]]; then
       myecho -e "  \n[\e[91m!\e[0m] $req_srv \e[91mNOT exists\e[91m but \e[91mREQUIRED\e[0m";
-      exit 1;
-    fi
+      exit 1; fi
     $SYSTEMCTL_BIN stop $req_srv --quiet 2>/dev/null
     $SYSTEMCTL_BIN disable $req_srv --quiet 2>/dev/null
 	done;
@@ -216,8 +231,7 @@ configure_linux() {
     $SYSTEMCTL_BIN stop $srv2stop --quiet 2>/dev/null
     $SYSTEMCTL_BIN disable $srv2stop --quiet 2>/dev/null
 	done;
-  $SYSTEMCTL_BIN daemon-reload
-  $SYSTEMCTL_BIN reset-failed
+  $SYSTEMCTL_BIN daemon-reload && $SYSTEMCTL_BIN reset-failed
 
   # ----------------------------------------------------------------------------
   # dnscrypt-proxy configure
@@ -314,5 +328,4 @@ configure_linux() {
 
 }
 
-# configure for root user a little bit differ
-configure_$(echo "$OS_MAJOR" | tr '[:upper:]' '[:lower:]') $1
+configure_$(echo "$OS_MAJOR" | tr '[:upper:]' '[:lower:]')

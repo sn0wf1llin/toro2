@@ -15,7 +15,7 @@ UseBridges 0
 
 ClientOnly 1
 SocksPort 9050
-TransPort 9040
+TransPort 9999
 
 # ControlPort for OnionCircuits
 ControlPort 9051
