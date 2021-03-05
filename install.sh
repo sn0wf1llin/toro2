@@ -318,6 +318,8 @@ configure_linux() {
   echo -e "nameserver ::1\nnameserver 127.0.0.1\noptions edns0 single-request-reopen" > /etc/resolv.conf
   chattr +i /etc/resolv.conf
 
+  $SYSTEMCTL_BIN daemon-reload
+  
   echo -e "\n[\e[92m+\e[0m] Done."
 
 }
