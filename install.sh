@@ -27,27 +27,22 @@ if [ `id -u` -ne 0 ]; then
 fi
 
 make_toro2_conf() {
-	#define the template.
-	echo -e "toro2_homedir=$TORO2_HOMEDIR
-toro2_path=$TORO2_PATH
-toro2_binary=/usr/bin/toro2
-backup_osfiles=False
-tor_libdir=$TOR_LIBDIR
-tor_logdir=$TOR_LOGDIR
-required_services=[ \"privoxy\", \"dnscrypt-proxy\"]
-tor_as_process=True
-tor_user=$TOR_USER
-iptables=$IPTABLES_BIN
-iptables_save=$IPTABLES_SAVE_BIN
-iptables_restore=$IPTABLES_RESTORE_BIN
-ip6tables=$IP6TABLES_BIN
-ip6tables_save=$IP6TABLES_SAVE_BIN
-ip6tables_restore=$IP6TABLES_RESTORE_BIN
-systemctl=$SYSTEMCTL_BIN
-username=$TORO2_USER
-python3=$PYTHON3_BIN
-tor=$TOR_BIN
-chattr=$CHATTR_BIN" > $TORO2_CONF
+	sed -i "s/toro2_homedir=.*/toro2_homedir=$TORO2_HOMEDIR/" $TORO2_CONF
+	sed -i "s/toro2_path=.*/toro2_path=$TORO2_PATH/" $TORO2_CONF
+	sed -i "s/tor_libdir=.*/tor_libdir=$TOR_LIBDIR/" $TORO2_CONF
+	sed -i "s/tor_logdir=.*/tor_logdir=$TOR_LOGDIR/" $TORO2_CONF
+	sed -i "s/tor_user=.*/tor_user=$TOR_USER/" $TORO2_CONF
+	sed -i "s/iptables=.*/iptables=$IPTABLES_BIN/" $TORO2_CONF
+	sed -i "s/iptables_save=.*/iptables_save=$IPTABLES_SAVE_BIN/" $TORO2_CONF
+	sed -i "s/iptables_restore=.*/iptables_restore=$IPTABLES_RESTORE_BIN/" $TORO2_CONF
+	sed -i "s/ip6tables=.*/ip6tables=$IP6TABLES_BIN/" $TORO2_CONF
+	sed -i "s/ip6tables_save=.*/ip6tables_save=$IP6TABLES_SAVE_BIN/" $TORO2_CONF
+	sed -i "s/ip6tables_restore=.*/ip6tables_restore=$IP6TABLES_RESTORE_BIN/" $TORO2_CONF
+	sed -i "s/systemctl=.*/systemctl=$SYSTEMCTL_BIN/" $TORO2_CONF
+	sed -i "s/username=.*/username=$TORO2_USER/" $TORO2_CONF
+	sed -i "s/python3=.*/python3=$PYTHON3_BIN/" $TORO2_CONF
+	sed -i "s/tor=.*/tor=$TOR_BIN/" $TORO2_CONF
+	sed -i "s/chattr=.*/chattr=$CHATTR_BIN/" $TORO2_CONF
 }
 
 myecho() {
