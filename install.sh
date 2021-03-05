@@ -314,13 +314,12 @@ configure_linux() {
   # ----------------------------------------------------------------------------
 
   myecho -e "[\e[93m.\e[0m] Configuring resolv.conf ... \n"
-  if [ -f /etc/resolv.conf ]; then
-  	if [[ ! -z `file /etc/resolv.conf | grep "symbolic link"` ]]; then unlink /etc/resolv.conf ; fi
-	else
-  	chattr -i /etc/resolv.conf && rm -f /etc/resolv.conf ;
+  if [ -e /etc/resolv.conf ]; then
+  	if [[ -L /etc/resolv.conf ]]; then unlink /etc/resolv.conf ; fi
+    chattr -i /etc/resolv.conf && rm -f /etc/resolv.conf
   fi
 
-  chattr -i /etc/resolv.conf && \
+  touch /etc/resolv.conf
   echo -e "nameserver ::1\nnameserver 127.0.0.1\noptions edns0 single-request-reopen" > /etc/resolv.conf
   chattr +i /etc/resolv.conf
 
