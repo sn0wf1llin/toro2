@@ -19,9 +19,9 @@ RESV_IANA="0.0.0.0/8 100.64.0.0/10 169.254.0.0/16 192.0.0.0/24 192.0.2.0/24 192.
 TOR_USERNAME=tor
 TOR_UID=$(getent passwd | grep -w $TOR_USERNAME | cut -d':' -f3)
 VirtualAddrNetwork=10.192.0.0/10
-TRANS_PORT=9999
-DNS_PORT=55555
-OUT_IFACES=""
+TRANS_PORT=9040
+DNS_PORT=5353
+OUT_IFACES="enp3s0 ppp0"
 IPTABLES_BAK="iptables.bak"
 
 # save old iptables rules
@@ -145,9 +145,9 @@ iptables -t filter -A TORO2CHAIN_OUTPUT -j DROP
 iptables -t filter -P OUTPUT DROP
 
 ### Set default policies to DROP for IPv6
-#ip6tables -P INPUT DROP
-#ip6tables -P FORWARD DROP
-#ip6tables -P OUTPUT DROP
+ip6tables -P INPUT DROP
+ip6tables -P FORWARD DROP
+ip6tables -P OUTPUT DROP
 
 
 if [ $? -eq 0 ]; then

@@ -1,9 +1,12 @@
-DataDirectory /var/lib/tor
-#User tor
+User toro2
+DataDirectory
 
-ClientTransportPlugin obfs3,obfs4 exec /usr/bin/obfs4proxy -enableLogging=true -logLevel DEBUG managed
+#ClientTransportPlugin obfs3,obfs4 exec /usr/bin/obfs4proxy -enableLogging=true -logLevel DEBUG managed
 #Bridge obfs4 IP:Port Fingerprint Cert
-UseBridges 0
+#UseBridges 0
+#Bridge obfs3  46.22.208.37:443 EEE7519F8A035615038D19B694F6172DEDB42986
+#Bridge obfs3  84.238.144.115:9090 1991E9A34F93A922B70883D2AC93C9A535D44D3B
+#UseBridges 1
 
 #EntryNodes {} StrictNodes 0
 #ExiteNodes {} StrictNodes 0
@@ -15,7 +18,7 @@ UseBridges 0
 
 ClientOnly 1
 SocksPort 9050
-TransPort 9999
+TransPort 9040
 
 # ControlPort for OnionCircuits
 ControlPort 9051
@@ -37,3 +40,6 @@ Log notice stdout
 
 VirtualAddrNetwork 10.192.0.0/10
 AutomapHostsOnResolve 1
+TransListenAddress 172.16.0.1
+DNSPort 5353
+DNSListenAddress 172.16.0.1
