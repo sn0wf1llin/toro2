@@ -9,9 +9,7 @@ _Now TorO2 is running in 'live' mode, no daemon mode for now_
 
 `toro2` or `toro2 help` provides _Help_ menu
 ```
-Usage: toro2 [start] [stop] [switch] [install] [uninstall]
-        [status] [integrate] [installnobackup]
-        [iptablessave] [iptablesrestore]
+Usage: toro2 start | stop | switch | install | uninstall | naked | isnaked | status | integrate | installnobackup
         start                Start toro2 app (required to have it INSTALLed first)
         stop                 Stop toro2 app (stop services & tor)
         switch               Switch tor identity
@@ -19,10 +17,9 @@ Usage: toro2 [start] [stop] [switch] [install] [uninstall]
         uninstall            Uinstall toro2 app & files
         status               Get state of tor & services
         naked                Disables TorO2 protection until next start
+        isnaked              Checks TorO2 protection disabled
         integrate            Integrate toro2 installation with OS
         installnobackup      Same as INSTALL, with no backup system files
-        iptablessave         Save iptables configuration
-        iptablesrestore      Restore iptables configuration
 ```
 
 **Start** toro2 from terminal with _python3_ available
