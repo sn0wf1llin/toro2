@@ -40,6 +40,7 @@ Log notice stdout
 
 VirtualAddrNetwork 10.192.0.0/10
 AutomapHostsOnResolve 1
+
 TransListenAddress 172.16.0.1
-DNSPort 5353
+DNSPort 9053
 DNSListenAddress 172.16.0.1
