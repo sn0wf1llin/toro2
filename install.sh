@@ -170,28 +170,31 @@ configure_linux() {
 
 	if [[ ! -z $APT_GET_PKGMGR ]]; then
         $APT_GET_PKGMGR update && $APT_GET_PKGMGR install -y net-tools libevent-dev python3-pip \
-            dnscrypt-proxy privoxy tor proxychains minicom \
+            dnscrypt-proxy privoxy tor proxychains minicom openvpn unzip \
             onioncircuits obfs4proxy tor
 	elif [[ ! -z $YUM_PKGMGR ]]; then
 		$YUM_PKGMGR -y update && $YUM_PKGMGR -y install net-tools privoxy dnscrypt-proxy python3-pip \
-            tor proxychains onioncircuits obfsproxy obfs4proxy tor
+            tor proxychains onioncircuits obfsproxy obfs4proxy tor openvpn unzip
 	elif [[ ! -z $PACMAN_PKGMGR ]]; then
         $PACMAN_PKGMGR -Sy && $PACMAN_PKGMGR -Su && $PACMAN_PKGMGR -S netstat-nat dnscrypt-proxy privoxy \
-            tor proxychains tor
+            tor proxychains tor openvpn unzip
 	else
 		echo "[\e[92mx\e[0m] No package manager configured for $OS $VER"
 		exit 1
 	fi
 
-  id privoxy 2>/dev/null 1>&2; if [[ $? -ne 0 ]]; then useradd --system --shell /bin/false --no-create-home --group --disabled-login privoxy ; fi
+  id privoxy 2>/dev/null 1>&2;
+  if [[ $? -ne 0 ]]; then
+    useradd --system --shell /bin/false --no-create-home --group --disabled-login privoxy ;
+  fi
 
   declare -a required_binaries=("chattr" "python3" "iptables" "iptables-save" "iptables-restore" "ip6tables" "ip6tables-save" "ip6tables-restore" "tor" "systemctl" "dnscrypt-proxy")
   myecho -e "[\e[93m.\e[0m] Configuring ... \n"
   for req_bin in "${required_binaries[@]}"; do
-		 which_req_bin $req_bin
-	done;
+    which_req_bin $req_bin
+  done;
 
-	mk_conf
+  mk_conf
 
   [[ -z $PYTHON3_BIN ]] && echo -e "[\e[91m!\e[0m] python3 required\n[\e[91m!\e[0m] Install python3 and restart the installation" && exit 1
 
@@ -222,14 +225,17 @@ configure_linux() {
   # only when she explicitly runs it from terminal as 'toro2 start'
   declare -a required_services=("privoxy.service" "dnscrypt-proxy.service" "dnscrypt-proxy.socket" "tor.service")
   myecho -e "[\e[93m.\e[0m] Stop & disable required services from autostart when no TorO2 used... \n"
+
   for req_srv in "${required_services[@]}"; do
     check_service_exists $req_srv
     if [[ $? -eq 1 ]]; then
         myecho -e "  \n[\e[91m!\e[0m] $req_srv \e[91mNOT exists\e[91m but \e[91mREQUIRED\e[0m";
-        exit 1; fi
+        exit 1;
+    fi
 
     $SYSTEMCTL_BIN stop $req_srv --quiet 2>/dev/null
     $SYSTEMCTL_BIN disable $req_srv --quiet 2>/dev/null
+
   done;
 
   declare -a optional_services=("dnsmasq.service")
@@ -237,7 +243,8 @@ configure_linux() {
   for opt_srv in "${optional_services[@]}"; do
     check_service_exists $opt_srv
     if [[ $? -eq 1 ]]; then
-      myecho -e "  \n[\e[93m!\e[0m] $opt_srv \e[93mNOT exists\e[0m and \e[96mNot strictly Required\e[0m."; fi
+      myecho -e "  \n[\e[93m!\e[0m] $opt_srv \e[93mNOT exists\e[0m and \e[96mNot strictly Required\e[0m.";
+    fi
   done
 
   myecho -e "[\e[92m+\e[0m] success.\n"
@@ -248,9 +255,12 @@ configure_linux() {
 
   declare -a services_to_stop=("avahi-daemon" "avahi-daemon.socket" "systemd-resolved" "cups")
   myecho -e "[\e[93m.\e[0m] Configuring services to be stopped & disabled ... \n"
+
   for srv2stop in "${services_to_stop[@]}"; do
+
     $SYSTEMCTL_BIN stop $srv2stop --quiet 2>/dev/null
     $SYSTEMCTL_BIN disable $srv2stop --quiet 2>/dev/null
+
   done;
 
   # ----------------------------------------------------------------------------
@@ -331,7 +341,9 @@ configure_linux() {
 
   myecho -e "[\e[93m.\e[0m] Configuring resolv.conf ... \n"
   if [[ -e /etc/resolv.conf ]]; then
-  	if [[ -L /etc/resolv.conf ]]; then unlink /etc/resolv.conf ; fi
+  	if [[ -L /etc/resolv.conf ]]; then
+  	    unlink /etc/resolv.conf ;
+  	fi
     chattr -i /etc/resolv.conf && rm -f /etc/resolv.conf
   fi
 

@@ -1,19 +1,21 @@
 User toro2
-DataDirectory
+DataDirectory /var/lib/tor
 
-#ClientTransportPlugin obfs3,obfs4 exec /usr/bin/obfs4proxy -enableLogging=true -logLevel DEBUG managed
+ClientTransportPlugin obfs3,obfs4 exec /usr/bin/obfs4proxy -enableLogging=true -logLevel DEBUG managed
 #Bridge obfs4 IP:Port Fingerprint Cert
-#UseBridges 0
-#Bridge obfs3  46.22.208.37:443 EEE7519F8A035615038D19B694F6172DEDB42986
-#Bridge obfs3  84.238.144.115:9090 1991E9A34F93A922B70883D2AC93C9A535D44D3B
-#UseBridges 1
+UseBridges 1
 
+Bridge  <Bridge's data here>
+
+#ClientTransportPlugin obfs3 exec /usr/bin/obfsproxy --managed
 #EntryNodes {} StrictNodes 0
-#ExiteNodes {} StrictNodes 0
+#ExitNodes {il}
+#ExitNodes {nl}
+#StrictNodes 1
 
 #ControlSocket /var/lib/tor/control_socket
 #ControlSocketsGroupWritable 1
-#DataDirectoryGroupReadable 1
+#DataDirectory /var/lib/tor
 #CacheDirectoryGroupReadable 1
 
 ClientOnly 1
@@ -40,7 +42,6 @@ Log notice stdout
 
 VirtualAddrNetwork 10.192.0.0/10
 AutomapHostsOnResolve 1
-
-TransListenAddress 172.16.0.1
-DNSPort 9053
-DNSListenAddress 172.16.0.1
+#TransListenAddress 172.16.0.1
+#DNSPort 9053
+#DNSListenAddress 172.16.0.1
