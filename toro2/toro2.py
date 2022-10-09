@@ -701,7 +701,7 @@ class Toro2:
 
     @check_already_installed
     def get_version(self):
-        return self.version
+        print(self.version)
 
     @check_already_installed
     def start(self):
