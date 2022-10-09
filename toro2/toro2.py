@@ -700,7 +700,7 @@ class Toro2:
         return managed, reduce(lambda x, y: x & y, managed.values())
 
     @check_already_installed
-    def version(self):
+    def get_version(self):
         return self.version
 
     @check_already_installed
@@ -951,7 +951,7 @@ if __name__ == "__main__":
             toro2.help()
 
         elif sys.argv[1] == "version":
-            toro2.version()
+            toro2.get_version()
 
         else:
             print(f'[{bgcolors.LIGHT_YELLOW_COLOR}-{bgcolors.RESET_COLOR}] Unknown command \'{sys.argv[1]}\'')
