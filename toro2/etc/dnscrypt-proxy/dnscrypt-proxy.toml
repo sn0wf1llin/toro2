@@ -30,7 +30,7 @@
 ## Remove the leading # first to enable this; lines starting with # are ignored.
 
 # server_names = ['scaleway-fr', 'google', 'yandex', 'cloudflare']
-server_names = ['scaleway-fr', 'adguard-dns', 'aaflalo-me-nyc', 'aaflalo-me-gcp', 'alidns-doh', 'doh-eastus-pi-dns', 'doh-eastas-pi-dns', 'doh-eastas-pi-dns-ipv6', 'doh-eastas-pi-dns-ipv6', 'ev-to', 'ev-va', 'libredns', 'oszx', 'quad101', 'publicarray-au2', 'safesurfer', 'quad9-dnscrypt-ip4-filter-pri', 'quad9-dnscrypt-ip6-filter-pri', 'quad9-doh-ip4-nofilter-pri', 'quad9-doh-ip6-nofilter-pri']
+server_names = ['controld-uncensored', 'dct-at1', 'dct-de1', 'dct-nl1', 'dct-ru1', 'dns.digitalsize.net', 'acsacsar-ams-ipv4', 'acsacsar-ams-ipv6', 'scaleway-fr', 'sfw.scaleway-fr ', 'adguard-dns', 'alidns-doh',  'libredns', 'oszx', 'quad101', 'publicarray-au2-doh', 'safesurfer', 'circl-doh', 'circl-doh-ipv6', 'quad9-dnscrypt-ip4-filter-pri', 'starrydns', 'sth-dnscrypt-se-ipv6', 'nextdns', 'nextdns-ipv6']
 
 
 ## List of local addresses and ports to listen to. Can be IPv4 and/or IPv6.

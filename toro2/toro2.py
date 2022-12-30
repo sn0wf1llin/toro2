@@ -189,17 +189,17 @@ class Toro2:
         elif action == "create":
             if not self.user_op(username, "check"):
                 self.username = username
-                subprocess.run(['sudo', 'useradd', '--system', '--shell', '/bin/false', '--no-create-home', f'{username}'],
-                               shell=False, cwd=None, timeout=3)
+                subprocess.run(['useradd', '--system', '--shell', '/bin/false', '--no-create-home', f'{username}'],
+                               capture_output=False, shell=False, cwd=None, timeout=3)
                 self.uid = int(subprocess.getoutput("id -u {}".format(self.username)))
                 self.gid = int(subprocess.getoutput("id -g {}".format(self.username)))
 
         elif action == "delete":
             if self.user_op(username, "check"):
-                subprocess.run(['sudo', 'userdel', f'{username}'], shell=False, cwd=None, timeout=3)
+                subprocess.run(['userdel', f'{username}'], capture_output=False, shell=False, cwd=None, timeout=3)
                 try:
                     grp.getgrnam(username)
-                    subprocess.run(['sudo', 'groupdel', f'{username}'], capture_output=False,
+                    subprocess.run(['groupdel', f'{username}'], capture_output=False,
                                    shell=False, cwd=None, timeout=3).check_returncode()
                 except KeyError:
                     pass
@@ -339,7 +339,7 @@ class Toro2:
                 curr_backup_dir_n = 0
 
         else:
-            subprocess.run(['sudo', 'mkdir', '-p', f'{backup_dir}'], shell=False, cwd=None, timeout=3)
+            subprocess.run(['mkdir', '-p', f'{backup_dir}'], capture_output=False, shell=False, cwd=None, timeout=3)
             os.chown(backup_dir, self.uid, self.gid)
             curr_backup_dir_n = 0
 
@@ -374,8 +374,8 @@ class Toro2:
         command6 = [f'{self.ip6tables_save}', '-f', f'{backup_dir}/{curr_backup_dir}/ip6tables.bak']
 
         try:
-            subprocess.run([command4], shell=False, cwd=None, timeout=3).check_returncode()
-            subprocess.run([command6], shell=False, cwd=None, timeout=3).check_returncode()
+            subprocess.run([command4], capture_output=False, shell=False, cwd=None, timeout=3).check_returncode()
+            subprocess.run([command6], capture_output=False, shell=False, cwd=None, timeout=3).check_returncode()
 
         except subprocess.CalledProcessError as e:
             print(f'[{bgcolors.LIGHT_YELLOW_COLOR}-{bgcolors.RESET_COLOR}] Unable {bgcolors.CYAN_COLOR} to '
@@ -412,13 +412,13 @@ class Toro2:
 
             if ipv4_save:
                 subprocess.run([f'{self.iptables_save}', '-f', f'{self.ipv4_bakfile}'],
-                               shell=False, cwd=None, timeout=3)
+                               capture_output=False, shell=False, cwd=None, timeout=3)
                 with open(f'{self.ipv4_lockfile}', 'w') as f:
                     f.write('1')
 
             if ipv6_save:
                 subprocess.run([f'{self.ip6tables_save}', '-f', f'{self.ipv6_bakfile}'],
-                               shell=False, cwd=None, timeout=3)
+                               capture_output=False, shell=False, cwd=None, timeout=3)
                 with open(f'{self.ipv6_lockfile}', 'w') as f:
                     f.write('1')
 
@@ -451,13 +451,13 @@ class Toro2:
 
             if ipv4_restore:
                 subprocess.run([f'{self.iptables_restore}', f'{self.ipv4_bakfile}'],
-                               shell=False, cwd=None, timeout=3)
+                               capture_output=False, shell=False, cwd=None, timeout=3)
                 with open(f'{self.ipv4_lockfile}', 'w') as f:
                     f.write('0')
 
             if ipv6_restore:
                 subprocess.run([f'{self.ip6tables_restore}', f'{self.ipv6_bakfile}'],
-                               shell=False, cwd=None, timeout=3)
+                               capture_output=False, shell=False, cwd=None, timeout=3)
                 with open(f'{self.ipv6_lockfile}', 'w') as f:
                     f.write('0')
 
@@ -494,7 +494,7 @@ class Toro2:
         if sudo:
             command = ['sudo'] + command
         try:
-            mng_p = subprocess.run(command, shell=False, cwd=None, timeout=5,
+            mng_p = subprocess.run(command, capture_output=False, shell=False, cwd=None, timeout=5,
                                    stdout=subprocess.DEVNULL)
             if action != 'status':
                 mng_p.check_returncode()
@@ -615,7 +615,7 @@ class Toro2:
 
         if self.tor_as_process:
             try:
-                subprocess.run(['sudo', 'killall', 'tor'], timeout=3,
+                subprocess.run(['sudo', 'killall', 'tor'], capture_output=False, timeout=3,
                                shell=False).check_returncode()
             except subprocess.CalledProcessError as e:
                 print(
@@ -824,7 +824,7 @@ class Toro2:
         else:
             all_status['tor'] = is_process_up('tor')
             rservices = self.required_services
-            tor_status = subprocess.getoutput("sudo ps -fC tor | tail -n 1 | grep -v PPID || echo 'no info'")
+            tor_status = subprocess.getoutput("ps -fC tor | tail -n 1 | grep -v PPID || echo 'no info'")
             clr, lbl = bgcolors.RED_COLOR, '-'
             if tor_status != 'no info':
                 clr, lbl = bgcolors.LIGHT_GREEN_COLOR, '+'
@@ -859,14 +859,15 @@ class Toro2:
         self.iamnaked = True
 
         try:
-            subprocess.run(['sudo', f'{self.iptables}', '-P', 'OUTPUT', 'ACCEPT'], timeout=3, shell=False).check_returncode()
+            subprocess.run(['sudo', f'{self.iptables}', '-P', 'OUTPUT', 'ACCEPT'],
+                           capture_output=False, timeout=3, shell=False).check_returncode()
         except subprocess.CalledProcessError as e:
             self.iamnaked = False
             print(f'[{bgcolors.RED_COLOR}x{bgcolors.RESET_COLOR}] Unable to set policy ACCEPT: {e}')
 
         try:
             subprocess.run(['sudo', f'{self.chattr}', '-i', '/etc/resolv.conf'],
-                           timeout=3, shell=False).check_returncode()
+                           capture_output=False, timeout=3, shell=False).check_returncode()
             with open("/etc/resolv.conf", 'w') as f:
                 f.write(f'nameserver {self.naked_nameserver}')
 

@@ -13,28 +13,37 @@
 # }
 
 IGNORE_TOR="192.168.100.0/24 192.168.88.0/24 192.168.1.0/24 192.168.0.0/24"
-# Other IANA reserved blocks (These are not processed by tor and dropped by default)
-RESV_IANA="0.0.0.0/8 100.64.0.0/10 169.254.0.0/16 192.0.0.0/24 192.0.2.0/24 192.88.99.0/24 198.18.0.0/15 198.51.100.0/24 203.0.113.0/24 224.0.0.0/4 240.0.0.0/4 255.255.255.255/32"
+### Other IANA reserved blocks (These are not processed by tor and dropped by default)
+RESV_IANA="0.0.0.0/8 100.64.0.0/10 169.254.0.0/16 172.17.0.0/16 173.17.0.0/16 174.17.0.0/16 192.0.0.0/24 192.0.2.0/24 192.88.99.0/24 198.18.0.0/15 198.51.100.0/24 203.0.113.0/24 224.0.0.0/4 240.0.0.0/4 255.255.255.255/32"
 
-TOR_USERNAME=tor
+TOR_USERNAME=toro2
 TOR_UID=$(getent passwd | grep -w $TOR_USERNAME | cut -d':' -f3)
 VirtualAddrNetwork=10.192.0.0/10
 TRANS_PORT=9040
 DNS_PORT=5353
-OUT_IFACES="enp3s0 ppp0"
+VPN_IFACE="tun0"
+OUT_IFACES="enp3s0 wlp5s0 ppp0 wg0 vboxnet0"
 IPTABLES_BAK="iptables.bak"
 
-# save old iptables rules
+### Save old iptables rules
 iptables-save > $IPTABLES_BAK
 
+### Create new TORO2CHAIN_INPUT, TORO2CHAIN_OUTPUT chains
+### in filter table & redirects all traffic to them accordingly
 iptables -t filter -N TORO2CHAIN_INPUT
 iptables -t filter -N TORO2CHAIN_OUTPUT
 iptables -t filter -I INPUT 1 -j TORO2CHAIN_INPUT
 iptables -t filter -I OUTPUT 1 -j TORO2CHAIN_OUTPUT
 
+### Create new TORO2CHAIN_PREROUTING, TORO2CHAIN_POSTROUTING,
+### TORO2CHAIN_OUTPUT chains in nat table & redirects all traffic 
+### to them accordingly
 iptables -t nat -N TORO2CHAIN_OUTPUT
-# iptables -t nat -N TORO2CHAIN_PREROUTING
+iptables -t nat -N TORO2CHAIN_PREROUTING
+iptables -t nat -N TORO2CHAIN_POSTROUTING
 iptables -t nat -I OUTPUT 1 -j TORO2CHAIN_OUTPUT
+iptables -t nat -I PREROUTING 1 -j TORO2CHAIN_PREROUTING
+iptables -t nat -I POSTROUTING 1 -j TORO2CHAIN_POSTROUTING
 # iptables -t nat -A PREROUTING -j TORO2CHAIN_PREROUTING
 
 # *nat
@@ -46,10 +55,10 @@ iptables -t nat -I OUTPUT 1 -j TORO2CHAIN_OUTPUT
 #iptables -t nat -A TORO2CHAIN_PREROUTING ! -i lo -p tcp -m tcp --tcp-flags FIN,SYN,RST,ACK SYN -j LOG --log-prefix "Iptables: PREROUTING: [SYN] TCP Redirected: "
 
 ### *nat OUTPUT (For local redirection)
-# nat .onion addresses
+### nat .onion addresses
 iptables -t nat -A TORO2CHAIN_OUTPUT -p tcp -m tcp --tcp-flags FIN,SYN,RST,ACK SYN -d $VirtualAddrNetwork -j REDIRECT --to-ports $TRANS_PORT
 
-# nat dns requests to Tor
+### nat dns requests to Tor
 iptables -t nat -A TORO2CHAIN_OUTPUT -d 127.0.0.1/32 -p udp -m udp --dport 53 -j REDIRECT --to-ports $DNS_PORT
 
 iptables -t nat -A TORO2CHAIN_OUTPUT -p tcp -m tcp --dport 53 -j REDIRECT --to-ports $DNS_PORT
@@ -62,32 +71,31 @@ iptables -t nat -A TORO2CHAIN_OUTPUT -m state --state ESTABLISHED,RELATED -j RET
 
 iptables -t nat -A TORO2CHAIN_OUTPUT -p icmp --icmp-type echo-request -j REDIRECT --to-ports $TRANS_PORT
 
-# Don't nat the Tor process, the loopback, or the local network
+### Don't nat the Tor process, the loopback, or the local network
 iptables -t nat -A TORO2CHAIN_OUTPUT -m owner --uid-owner $TOR_UID -j RETURN
 iptables -t nat -A TORO2CHAIN_OUTPUT -o lo -j RETURN
 
 #iptables -t nat -A TORO2CHAIN_OUTPUT -p tcp -d $VirtualAddrNetwork -j LOG --log-prefix "Iptables: nat OUTPUT: TCP VirtualAddrNetwork: "
 
-# Allow lan access for hosts in $IGNORE_TOR
+### Allow lan access for hosts in $IGNORE_TOR
 for NET in $IGNORE_TOR 127.0.0.1/8 10.0.0.0/8 172.16.0.0/12; do
   iptables -t nat -A TORO2CHAIN_OUTPUT -d $NET -j RETURN;
 done;
 
 for NET in $RESV_IANA; do
-  iptables -t nat -A TORO2CHAIN_OUTPUT -d $NET -j RETURN
+  iptables -t nat -A TORO2CHAIN_OUTPUT -d $NET -j RETURN;
 done;
 
-# Redirect all other pre-routing and output to Tor's TransPort
+### Redirect all other pre-routing and output to Tor's TransPort
 iptables -t nat -A TORO2CHAIN_OUTPUT -p tcp -m tcp --tcp-flags FIN,SYN,RST,ACK SYN -j REDIRECT --to-ports $TRANS_PORT
 #iptables -t nat -A TORO2CHAIN_OUTPUT -p tcp -m tcp --tcp-flags FIN,SYN,RST,ACK SYN -j LOG --log-prefix "Iptables: [SYN] TCP Redirected: "
 
-# ????
+### ????
 iptables -t nat -A TORO2CHAIN_OUTPUT -p tcp -m tcp -j REDIRECT --to-ports $TRANS_PORT
 iptables -t nat -A TORO2CHAIN_OUTPUT -p udp -m udp -j REDIRECT --to-ports $TRANS_PORT
 #iptables -t nat -A TORO2CHAIN_OUTPUT -p tcp -j LOG --log-prefix "Iptables: TCP Redirected: "
 
-
-# *filter
+### *filter
 iptables -t filter -P FORWARD DROP
 
 #iptables -t filter -A TORO2CHAIN_INPUT -p icmp --icmp-type echo-request -j DROP
@@ -98,7 +106,12 @@ iptables -t filter -A TORO2CHAIN_INPUT -m state --state INVALID -j DROP
 
 # Don't forget to grant yourself ssh access from remote machines before the DROP.
 for oi in $OUT_IFACES; do
-  iptables -t filter -A TORO2CHAIN_INPUT -i $oi -p tcp --dport 22 -m state --state NEW -j ACCEPT
+    iptables -t filter -A TORO2CHAIN_INPUT -i $oi -p tcp --dport 22 -m state --state NEW -j ACCEPT
+
+    # Masq outgoing
+    #iptables -t nat -A POSTROUTING -o $oi -j MASQUERADE
+    # allow input 
+    #iptables -A INPUT -i $oi -m state --state RELATED,ESTABLISHED -j ACCEPT
 done
 
 iptables -t filter -A TORO2CHAIN_INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
@@ -117,10 +130,29 @@ iptables -t filter -A TORO2CHAIN_OUTPUT -m state --state INVALID -j DROP
 iptables -t filter -A TORO2CHAIN_OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
 
 
-# Allow Tor process output
-for oi in $OUT_IFACES; do
-  iptables -t filter -A TORO2CHAIN_OUTPUT -o $oi -m owner --uid-owner $TOR_UID -p tcp -m tcp --tcp-flags FIN,SYN,RST,ACK SYN -m state --state NEW -j ACCEPT
-done;
+
+### VPN START
+### If VPN available redirect to it then to it???
+ls /sys/class/net/ | grep $VPN_IFACE >/dev/null
+if [ $? -eq 0 ]; then
+	  iptables -t filter -A TORO2CHAIN_OUTPUT -o $VPN_IFACE -m owner --uid-owner $TOR_UID -p tcp -m tcp --tcp-flags FIN,SYN,RST,ACK SYN -m state --state NEW -j ACCEPT
+
+    for oi in $OUT_IFACES; do
+        iptables -t filter -A TORO2CHAIN_OUTPUT  -o $oi -j DROP
+        iptables -t filter -A FORWARD -o $oi -j DROP
+    done
+
+else
+
+### VPN END
+
+
+### Allow Tor process output
+    for oi in $OUT_IFACES; do
+        iptables -t filter -A TORO2CHAIN_OUTPUT -o $oi -m owner --uid-owner $TOR_UID -p tcp -m tcp --tcp-flags FIN,SYN,RST,ACK SYN -m state --state NEW -j ACCEPT
+    done;
+
+fi
 
 # Allow loopback output
 iptables -t filter -A TORO2CHAIN_OUTPUT -d 127.0.0.1/32 -o lo -j ACCEPT
