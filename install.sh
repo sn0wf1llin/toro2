@@ -220,7 +220,7 @@ configure_linux() {
   # required services must be 0. stopped 1. disabled by default
   # which gives user an opportunity to run whole toro2 with all servcies
   # only when she explicitly runs it from terminal as 'toro2 start'
-  declare -a required_services=("privoxy.service" "dnscrypt-proxy.service" "dnscrypt-proxy.socket" "tor.service")
+  declare -a required_services=("privoxy.service" "dnscrypt-proxy.service" "tor.service")
   myecho -e "[\e[93m.\e[0m] Stop & disable required services from autostart when no TorO2 used... \n"
   for req_srv in "${required_services[@]}"; do
     check_service_exists $req_srv
