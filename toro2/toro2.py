@@ -99,7 +99,8 @@ class Toro2:
         # Var to store if naked() func used before
         # to manage files responsible for anonymity etc
 
-        self.version = "2.4.0"
+        self._version = "2.4.2"
+        self.version = f'TorO2 {self._version}\t10 Oct 2022'
 
         self.config_file_name = config_file_name
         self.files_to_backup = list(map(lambda i: i.format(os.getenv("HOME")),
@@ -109,29 +110,29 @@ class Toro2:
                                                                      "/etc/privoxy/config", "/etc/proxychains.conf",
                                                                      "/etc/dnsmasq.conf"]))))
         default_config = {
-            "toro2_homedir": "/etc/toro2",
-            "toro2_path": "/etc",
-            "toro2_binary": "/usr/bin/toro2",
-            "backup_osfiles": False,
-            "tor_libdir": None,
-            "tor_logdir": "/var/log/tor",
-            "required_services": ["privoxy", "dnscrypt-proxy"],
-            "tor_as_process": True,
-            "tor_user": "toro2",
-            "iptables": "/usr/bin/iptables",
-            "iptables_save": "/usr/bin/iptables-save",
-            "iptables_restore": "/usr/bin/iptables-restore",
-            "ip6tables": "/usr/bin/ip6tables",
-            "ip6tables_save": "/usr/bin/ip6tables-save",
-            "ip6tables_restore": "/usr/bin/ip6tables-restore",
-            "systemctl": "/usr/bin/systemctl",
-            "chattr": "/usr/bin/chattr",
-            "username": "toro2",
-            "pidfile": "/tmp/toro2.pid",
-            "python3": "/usr/bin/python3",
-            "tor": "/usr/bin/tor",
-            "dnscrypt_proxy_port": 5353,
-            "tor_trans_port": 9040
+            "toro2_homedir":        "/etc/toro2",
+            "toro2_path":           "/etc",
+            "toro2_binary":         "/usr/bin/toro2",
+            "backup_osfiles":       False,
+            "tor_libdir":           None,
+            "tor_logdir":           "/var/log/tor",
+            "required_services":    ["privoxy", "dnscrypt-proxy"],
+            "tor_as_process":       True,
+            "tor_user":             "toro2",
+            "iptables":             "/usr/bin/iptables",
+            "iptables_save":        "/usr/bin/iptables-save",
+            "iptables_restore":     "/usr/bin/iptables-restore",
+            "ip6tables":            "/usr/bin/ip6tables",
+            "ip6tables_save":       "/usr/bin/ip6tables-save",
+            "ip6tables_restore":    "/usr/bin/ip6tables-restore",
+            "systemctl":            "/usr/bin/systemctl",
+            "chattr":               "/usr/bin/chattr",
+            "username":             "toro2",
+            "pidfile":              "/tmp/toro2.pid",
+            "python3":              "/usr/bin/python3",
+            "tor":                  "/usr/bin/tor",
+            "dnscrypt_proxy_port":  5353,
+            "tor_trans_port":       9040
         }
 
         self.config = default_config
@@ -165,8 +166,8 @@ class Toro2:
 
     def help(self):
         print("""
-    Usage: toro2 [start | stop | switch | naked | isnaked | install | uninstall | status | installnobackup]
-            start                Start toro2 app (required to have it INSTALLed first)
+    Usage: toro2 [start | stop | switch | naked | isnaked | install | uninstall | status | installnobackup | version]
+            start                Start toro2 app (required to have it installed first)
             stop                 Stop toro2 app (stop services & tor)
             switch               Switch tor identity
             naked                Disables TorO2 protection until next start
@@ -174,8 +175,8 @@ class Toro2:
             install              Install toro2 app & files
             uninstall            Uninstall toro2 app & files
             status               Get state of tor & services
-            integrate            Integrate toro2 installation with OS
             installnobackup      Same as INSTALL, with no backup system files
+            version              Print TorO2 version and exits
         """)
 
     def user_op(self, username, action):
@@ -294,7 +295,7 @@ class Toro2:
     def banner(self):
         banner = f'''
 
-    --------[ version {self.version}        hh15461 ]--------
+    --------[ version {self._version}        hh15461 ]--------
     --------[ Breathe freely with    TorO2 ]--------
 
     ###############################################
@@ -698,6 +699,10 @@ class Toro2:
         return managed, reduce(lambda x, y: x & y, managed.values())
 
     @check_already_installed
+    def version(self):
+        return self.version
+
+    @check_already_installed
     def start(self):
         print(f'[{bgcolors.LIGHT_BLUE_COLOR}.{bgcolors.RESET_COLOR}] Starting ... ')
 
@@ -944,6 +949,9 @@ if __name__ == "__main__":
 
         elif sys.argv[1] == "help":
             toro2.help()
+
+        elif sys.argv[1] == "version":
+            toro2.version()
 
         else:
             print(f'[{bgcolors.LIGHT_YELLOW_COLOR}-{bgcolors.RESET_COLOR}] Unknown command \'{sys.argv[1]}\'')

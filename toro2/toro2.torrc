@@ -1,7 +1,7 @@
 User toro2
 DataDirectory
 
-#ClientTransportPlugin obfs3,obfs4 exec /usr/bin/obfs4proxy -enableLogging=true -logLevel DEBUG managed
+ClientTransportPlugin obfs3,obfs4 exec /usr/bin/obfs4proxy -enableLogging=true -logLevel DEBUG managed
 #Bridge obfs4 IP:Port Fingerprint Cert
 #UseBridges 0
 #Bridge obfs3  46.22.208.37:443 EEE7519F8A035615038D19B694F6172DEDB42986

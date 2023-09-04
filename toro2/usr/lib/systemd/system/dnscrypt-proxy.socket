@@ -5,12 +5,11 @@ Before=nss-lookup.target
 Wants=nss-lookup.target network-online.target
 
 [Socket]
-ListenStream=
-ListenDatagram=
-ListenStream=127.0.0.1:5353
-ListenStream=[::1]:5353
-ListenDatagram=127.0.0.1:5353
-ListenDatagram=[::1]:5353
+ListenStream=127.0.0.1:53
+ListenDatagram=127.0.0.1:53
+ListenStream=[::1]:53
+ListenDatagram=[::1]:53
+
 NoDelay=true
 DeferAcceptSec=1
 

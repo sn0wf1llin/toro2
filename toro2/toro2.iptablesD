@@ -1,41 +1,42 @@
 #!/bin/bash
 
 
-# Delete TORO2CHAIN_* from filter table
-iptables -t filter -D INPUT -j TORO2CHAIN_INPUT 2>/dev/null
-iptables -t filter -F TORO2CHAIN_INPUT 2>/dev/null
-iptables -t filter -X TORO2CHAIN_INPUT 2>/dev/null
+#### Delete TORO2CHAIN_* from filter table.
+iptables -t filter -D INPUT -j TORO2CHAIN_INPUT 2>/dev/null ;
+iptables -t filter -F TORO2CHAIN_INPUT 2>/dev/null ;
+iptables -t filter -X TORO2CHAIN_INPUT 2>/dev/null ;
 
-iptables -t filter -D OUTPUT -j TORO2CHAIN_OUTPUT 2>/dev/null
-iptables -t filter -F TORO2CHAIN_OUTPUT 2>/dev/null
-iptables -t filter -X TORO2CHAIN_OUTPUT 2>/dev/null
+iptables -t filter -D OUTPUT -j TORO2CHAIN_OUTPUT 2>/dev/null ;
+iptables -t filter -F TORO2CHAIN_OUTPUT 2>/dev/null ;
+iptables -t filter -X TORO2CHAIN_OUTPUT 2>/dev/null ;
 
-# Delete TORO2CHAIN_* from nat table
-iptables -t nat -D OUTPUT -j TORO2CHAIN_OUTPUT 2>/dev/null
-iptables -t nat -F TORO2CHAIN_OUTPUT 2>/dev/null
-iptables -t nat -X TORO2CHAIN_OUTPUT 2>/dev/null
+#### Delete TORO2CHAIN_* from nat table.
+iptables -t nat -D OUTPUT -j TORO2CHAIN_OUTPUT 2>/dev/null ;
+iptables -t nat -F TORO2CHAIN_OUTPUT 2>/dev/null ;
+iptables -t nat -X TORO2CHAIN_OUTPUT 2>/dev/null ;
 
-iptables -t nat -D PREROUTING -j TORO2CHAIN_PREROUTING 2>/dev/null
-iptables -t nat -F TORO2CHAIN_PREROUTING 2>/dev/null
-iptables -t nat -X TORO2CHAIN_PREROUTING 2>/dev/null
-iptables -t nat -D POSTROUTING -j TORO2CHAIN_POSTROUTING 2>/dev/null
-iptables -t nat -F TORO2CHAIN_POSTROUTING 2>/dev/null
-iptables -t nat -X TORO2CHAIN_POSTROUTING 2>/dev/null
+iptables -t nat -D PREROUTING -j TORO2CHAIN_PREROUTING 2>/dev/null ;
+iptables -t nat -F TORO2CHAIN_PREROUTING 2>/dev/null ;
+iptables -t nat -X TORO2CHAIN_PREROUTING 2>/dev/null ;
+iptables -t nat -D POSTROUTING -j TORO2CHAIN_POSTROUTING 2>/dev/null ;
+iptables -t nat -F TORO2CHAIN_POSTROUTING 2>/dev/null ;
+iptables -t nat -X TORO2CHAIN_POSTROUTING 2>/dev/null ;
 
-# set filter policy back
-iptables -t filter -P INPUT ACCEPT 2>/dev/null
-iptables -t filter -P FORWARD ACCEPT 2>/dev/null
-iptables -t filter -P OUTPUT DROP 2>/dev/null #ACCEPT
+#### Set filter policy back.
+iptables -t filter -P INPUT ACCEPT 2>/dev/null ;
+iptables -t filter -P FORWARD ACCEPT 2>/dev/null ;
+iptables -t filter -P OUTPUT DROP 2>/dev/null ; #ACCEPT
 
-iptables -t filter -L | grep -i chain | grep -v toro2 >/dev/null
-if [ $? -eq 0 ]; then
-  iptables -t nat -L | grep -i chain | grep -v toro2 >/dev/null
-  if [ $? -eq 0 ]; then
-    echo "Removing new toro2 rules: SUCCESS"
-    exit 0;
-  else   echo "Removing new toro2 rules (nat): FAILURE"
-  fi
+iptables -t filter -L | grep -i chain | grep -v toro2 >/dev/null ;
+if [[ $? -eq 0 ]]; then
+  iptables -t nat -L | grep -i chain | grep -v toro2 >/dev/null ;
+  if [[ $? -eq 0 ]]; then
+    echo "Removing new toro2 rules: SUCCESS" ;
+    exit 0 ;
+  else
+    echo "Removing new toro2 rules (nat): FAILURE" ;
+  fi ;
 else
-  echo "Removing new toro2 rules (filter): FAILURE"
-  exit 1;
-fi;
+  echo "Removing new toro2 rules (filter): FAILURE" ;
+  exit 1 ;
+fi ;

@@ -30,7 +30,7 @@
 ## Remove the leading # first to enable this; lines starting with # are ignored.
 
 # server_names = ['scaleway-fr', 'google', 'yandex', 'cloudflare']
-server_names = ['controld-uncensored', 'dct-at1', 'dct-de1', 'dct-nl1', 'dct-ru1', 'dns.digitalsize.net', 'acsacsar-ams-ipv4', 'acsacsar-ams-ipv6', 'scaleway-fr', 'sfw.scaleway-fr ', 'adguard-dns', 'oszx', 'quad101', 'publicarray-au2-doh', 'safesurfer', 'circl-doh', 'circl-doh-ipv6', 'quad9-dnscrypt-ip4-filter-pri', 'starrydns', 'sth-dnscrypt-se-ipv6', 'nextdns', 'nextdns-ipv6']
+server_names = ['scaleway-fr', 'adguard-dns', 'aaflalo-me-nyc', 'aaflalo-me-gcp', 'alidns-doh', 'doh-eastus-pi-dns', 'doh-eastas-pi-dns', 'doh-eastas-pi-dns-ipv6', 'doh-eastas-pi-dns-ipv6', 'ev-to', 'ev-va', 'libredns', 'oszx', 'quad101', 'publicarray-au2', 'safesurfer', 'quad9-dnscrypt-ip4-filter-pri', 'quad9-dnscrypt-ip6-filter-pri', 'quad9-doh-ip4-nofilter-pri', 'quad9-doh-ip6-nofilter-pri']
 
 
 ## List of local addresses and ports to listen to. Can be IPv4 and/or IPv6.
@@ -96,7 +96,7 @@ force_tcp = true
 ## Uncomment the following line to route all TCP connections to a local Tor node
 ## Tor doesn't support UDP, so set `force_tcp` to `true` as well.
 
-# proxy = 'socks5://127.0.0.1:9050'
+proxy = 'socks5://127.0.0.1:9050'
 
 
 ## HTTP/HTTPS proxy
@@ -663,11 +663,11 @@ cache_neg_max_ttl = 600
   ## Anonymized DNS relays
 
   [sources.'relays']
-    urls = ['https://raw.githubusercontent.com/DNSCrypt/dnscrypt-resolvers/master/v3/relays.md', 'https://download.dnscrypt.info/resolvers-list/v3/relays.md', 'https://ipv6.download.dnscrypt.info/resolvers-list/v3/relays.md']
-    cache_file = 'relays.md'
-    minisign_key = 'RWQf6LRCGA9i53mlYecO4IzT51TGPpvWucNSCh1CBM0QTaLn73Y7GFO3'
-    refresh_delay = 72
-    prefix = ''
+  urls = ['https://raw.githubusercontent.com/DNSCrypt/dnscrypt-resolvers/master/v3/relays.md', 'https://download.dnscrypt.info/resolvers-list/v3/relays.md', 'https://ipv6.download.dnscrypt.info/resolvers-list/v3/relays.md', 'https://download.dnscrypt.net/resolvers-list/v3/relays.md']
+  cache_file = '/var/cache/dnscrypt-proxy/relays.md'
+  minisign_key = 'RWQf6LRCGA9i53mlYecO4IzT51TGPpvWucNSCh1CBM0QTaLn73Y7GFO3'
+  refresh_delay = 72
+  prefix = ''
 
 
   ## Quad9 over DNSCrypt - https://quad9.net/

@@ -81,7 +81,7 @@
 #  force-support:
 #    Privoxy has been compiled with support for forced loading
 #    of blocked content. In that case, the symbol "force-prefix" is
-#    avaiable, which translates to the FORCE_PREFIX
+#    available, which translates to the FORCE_PREFIX
 #
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
@@ -241,8 +241,8 @@
            href="@user-manual@contact.html">get support or report problems</a>. \
         <p> \
           If you want to support the Privoxy Team, you can \
-          <a href="https://www.privoxy.org/faq/general.html#PARTICIPATE">participate</a> \
-          or <a href="https://www.privoxy.org/faq/general.html#DONATE">donate</a>. \
+          <a href="https://www.privoxy.org/participate">participate</a> \
+          or <a href="https://www.privoxy.org/donate">donate</a>. \
         </p> \
       </td> \
     </tr> \
