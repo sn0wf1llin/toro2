@@ -22,7 +22,7 @@ VirtualAddrNetwork="10.192.0.0/10" ;
 TRANS_PORT=9040 ;
 DNS_PORT=5353 ;
 VPN_IFACE="tun0" ;
-OUT_IFACES="enp3s0 wlp5s0 ppp0 wg0 vboxnet0" ;
+OUT_IFACES="enp3s0 wlp5s0 ppp0 wg0 vboxnet0 wlp0s20f3 tun0 tun1" ;
 IPTABLES_BAK="iptables.bak" ;
 
 #### Save old iptables rules.

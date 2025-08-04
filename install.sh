@@ -33,28 +33,31 @@ readconf() {
 }
 
 readconf myconf < $TORO2_CONF ;
+
 # echo ${myconf["tor_trans_port"]}
 
 mk_conf() {
-    TOR_LIBDIR=${myconf['tor_libdir']} ;
-    TOR_LOGDIR=${myconf['tor_logdir']} ;
-    TORO2_HOMEDIR=${myconf['toro2_homedir']} ;
-    TORO2_PATH=${myconf['toro2_path']} ;
-    TORO2_USER=${myconf['username']} ;
-    DNSCRYPT_PROXY_USER=${myconf['dnscrypt_proxy_user']} ;
-    TOR_USER=${myconf['tor_user']} ;
+  TOR_LIBDIR=${myconf['tor_libdir']} ;
+  TOR_LOGDIR=${myconf['tor_logdir']} ;
+  TORO2_HOMEDIR=${myconf['toro2_homedir']} ;
+  TORO2_PATH=${myconf['toro2_path']} ;
+  TORO2_USER=${myconf['username']} ;
+  DNSCRYPT_PROXY_USER=${myconf['dnscrypt_proxy_user']} ;
+  TOR_USER=${myconf['tor_user']} ;
 
-    if [[ -z $TOR_USER ]]; then
-        TOR_USER=$(cat /etc/passwd | grep tor | cut -d':' -f1| head -n1) ;
-        if [[ -z "${TOR_USER}" ]]; then TOR_USER=tor; fi ;
-    fi ;
+  echo -e "tor config:\n  libdir = $TOR_LIBDIR ; \n  logdir = $TOR_LOGDIR ;  \n  tor user = $TOR_USER; \ntoro2 config:\n  toro2 home = $TORO2_HOMEDIR; \n  toro2 path = $TORO2_PATH; \n  toro2 user = $TORO2_USER; \nother config:\n  dnscrypt-proxy user = $DNSCRYPT_PROXY_USER;"
+
+  if [[ -z $TOR_USER ]]; then
+      TOR_USER=$(cat /etc/passwd | grep tor | cut -d':' -f1| head -n1) ;
+      if [[ -z "${TOR_USER}" ]]; then TOR_USER=tor; fi ;
+  fi ;
 
 	# sed -i "s!toro2_homedir=.*!toro2_homedir=$TORO2_HOMEDIR!" $TORO2_CONF ;
 	# sed -i "s!toro2_path=.*!toro2_path=$TORO2_PATH!" $TORO2_CONF ;
 	# sed -i "s!tor_libdir=.*!tor_libdir=$TOR_LIBDIR!" $TORO2_CONF ;
 	# sed -i "s!tor_logdir=.*!tor_logdir=$TOR_LOGDIR!" $TORO2_CONF ;
 
-    sed -i "s/tor_user=.*/tor_user=$TOR_USER/" $TORO2_CONF ;
+  sed -i "s/tor_user=.*/tor_user=$TOR_USER/" $TORO2_CONF ;
 	sed -i "s!iptables=.*!iptables=$IPTABLES_BIN!" $TORO2_CONF ;
 	sed -i "s!iptables_save=.*!iptables_save=$IPTABLES_SAVE_BIN!" $TORO2_CONF ;
 	sed -i "s!iptables_restore=.*!iptables_restore=$IPTABLES_RESTORE_BIN!" $TORO2_CONF ;
@@ -109,7 +112,7 @@ configure_windows() {
 	echo -e "  \n[\e[93m!\e[0m] Not implemented yet for $OS $VER" ;
 }
 
-which_req_bin() {
+check_req_bin() {
 	local REQ_BIN_NAME="$1" ;
 	local REQ_BIN=$(which $REQ_BIN_NAME) ;
 	if [[ -z $REQ_BIN ]]; then
@@ -128,6 +131,48 @@ badexit() {
   [[ ${code} ]] || code=1 ;
   myecho -e ${msg} ;
   exit ${code} ;
+}
+
+install_dnscrypt_proxy() {
+	# Update system package lists
+	#sudo apt update
+	# Install dependencies
+	#sudo apt install -y curl tar gnupg lsb-release
+
+	# Download latest dnscrypt-proxy release
+	cd /tmp
+	curl -s https://api.github.com/repos/DNSCrypt/dnscrypt-proxy/releases/latest \
+	| grep browser_download_url \
+	| grep 'linux_x86_64' \
+	| cut -d '"' -f 4 \
+	| wget -i -
+
+	# Extract archive
+	tar -xvf dnscrypt-proxy-linux_x86_64-*.tar.gz ;
+
+	cd dnscrypt-proxy-linux_x86_64-*/ 2>/dev/null || cd linux-x86_64 2>/dev/null ; if [[ $? -ne 0 ]]; then echo "Unable to install dnscrypt-proxy. Download error." ; exit 1; fi;
+
+	# Move binary and example configs
+	sudo mkdir -p /etc/dnscrypt-proxy ; sudo cp dnscrypt-proxy /usr/local/bin/ ; sudo cp example-dnscrypt-proxy.toml /etc/dnscrypt-proxy/dnscrypt-proxy.toml
+
+	# Create systemd service
+	sudo tee /etc/systemd/system/dnscrypt-proxy.service > /dev/null <<EOF
+[Unit]
+Description=dnscrypt-proxy
+After=network.target
+
+[Service]
+ExecStart=/usr/local/bin/dnscrypt-proxy -config /etc/dnscrypt-proxy/dnscrypt-proxy.toml
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+	# Reload systemd and enable service
+	sudo systemctl daemon-reexec ; sudo systemctl daemon-reload ;
+	#sudo systemctl enable dnscrypt-proxy ; sudo systemctl start dnscrypt-proxy
+
 }
 
 configure_linux() {
@@ -173,19 +218,30 @@ configure_linux() {
 	PACMAN_PKGMGR=$(which pacman 2>/dev/null) ;
 
 	if [[ ! -z $APT_GET_PKGMGR ]]; then
-        $APT_GET_PKGMGR update && $APT_GET_PKGMGR install -y git net-tools libevent-dev python3-pip \
-            dnscrypt-proxy privoxy tor proxychains minicom \
-            onioncircuits obfs4proxy tor openvpn unzip;
+	  $APT_GET_PKGMGR update && \
+	  $APT_GET_PKGMGR install -y git net-tools libevent-dev python3-pip \
+	    privoxy tor proxychains minicom \
+	    onioncircuits obfs4proxy tor openvpn unzip;
+	    $APT_GET_PKGMGR install -y dnscrypt-proxy ;
 	elif [[ ! -z $YUM_PKGMGR ]]; then
-		$YUM_PKGMGR -y update && $YUM_PKGMGR -y install git net-tools privoxy dnscrypt-proxy python3-pip \
-            tor proxychains onioncircuits obfsproxy obfs4proxy tor openvpn unzip;
+		$YUM_PKGMGR -y update && \
+		$YUM_PKGMGR -y install git net-tools privoxy dnscrypt-proxy python3-pip \
+		  tor proxychains onioncircuits obfsproxy obfs4proxy tor openvpn unzip;
 	elif [[ ! -z $PACMAN_PKGMGR ]]; then
-        $PACMAN_PKGMGR -Sy && $PACMAN_PKGMGR -Su && $PACMAN_PKGMGR -S git netstat-nat dnscrypt-proxy privoxy \
-            tor proxychains tor openvpn unzip;
+	  $PACMAN_PKGMGR -Sy && \
+	  $PACMAN_PKGMGR -Su && \
+	  $PACMAN_PKGMGR -S git netstat-nat dnscrypt-proxy privoxy \
+	    tor proxychains tor openvpn unzip;
 	else
 		echo "[\e[92mx\e[0m] No package manager configured for $OS $VER" ;
 		exit 1 ;
 	fi ;
+
+  # dnscrypt-proxy possible issues
+  which dnscrypt-proxy 2>/dev/null 1>&2 ;
+  if [[ $? -ne 0 ]]; then
+    install_dnscrypt_proxy
+  fi;
 
   id privoxy 2>/dev/null 1>&2;
   if [[ $? -ne 0 ]]; then
@@ -195,7 +251,7 @@ configure_linux() {
   declare -a required_binaries=("chattr" "python3" "iptables" "iptables-save" "iptables-restore" "ip6tables" "ip6tables-save" "ip6tables-restore" "tor" "systemctl" "dnscrypt-proxy") ;
   myecho -e "[\e[93m.\e[0m] Configuring ... \n" ;
   for req_bin in "${required_binaries[@]}"; do
-		 which_req_bin $req_bin ;
+		 check_req_bin $req_bin ;
   done;
 
   mk_conf ;
@@ -334,9 +390,9 @@ configure_linux() {
   # ----------------------------------------------------------------------------
   myecho -e "[\e[93m.\e[0m] Configuring tor ... \n" ;
 
-  # TOR_LIBDIR & TORO2_TOR_DATADIR must be owned by TOR_USER
-  usermod -a -G $TORO2_USER $foruser ;
+  usermod -a -G $TORO2_USER $USER ;
 
+  # TOR_LIBDIR & TORO2_TOR_DATADIR must be owned by TOR_USER
   [[ -d $TOR_LIBDIR ]] && rm -rf $TOR_LIBDIR ;
   mkdir -p $TOR_LIBDIR && chown -R $TORO2_USER: $TOR_LIBDIR && chmod 777 $TOR_LIBDIR ;
   sed -i "s!DataDirectory.*!DataDirectory $TOR_LIBDIR!" $TORO2_HOMEDIR/toro2/toro2.torrc ;

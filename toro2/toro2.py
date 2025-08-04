@@ -99,8 +99,8 @@ class Toro2:
         # Var to store if naked() func used before
         # to manage files responsible for anonymity etc
 
-        self._version = "2.4.2"
-        self.version = f'TorO2 {self._version}\t10 Oct 2022'
+        self._version = "2.4.3"
+        self.version = f'TorO2 {self._version}\t4 Aug 2025'
 
         self.config_file_name = config_file_name
         self.files_to_backup = list(map(lambda i: i.format(os.getenv("HOME")),
