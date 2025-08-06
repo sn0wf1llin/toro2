@@ -100,7 +100,7 @@ class Toro2:
         # to manage files responsible for anonymity etc
 
         self._version = "2.4.3"
-        self.version = f'TorO2 {self._version}\t4 Aug 2025'
+        self._version = f'TorO2 {self._version}\t4 Aug 2025'
 
         self.config_file_name = config_file_name
         self.files_to_backup = list(map(lambda i: i.format(os.getenv("HOME")),
@@ -616,8 +616,7 @@ class Toro2:
 
         if self.tor_as_process:
             try:
-                subprocess.run(['sudo', 'killall', 'tor'], capture_output=False, timeout=3,
-                               shell=False).check_returncode()
+                subprocess.run(['sudo', 'killall', 'tor'], capture_output=False, timeout=3, shell=False).check_returncode()
             except subprocess.CalledProcessError as e:
                 print(
                     f'[{bgcolors.LIGHT_YELLOW_COLOR}-{bgcolors.RESET_COLOR}] Unable {bgcolors.CYAN_COLOR}killall'
@@ -636,7 +635,8 @@ class Toro2:
         bad_ifaces = ['lo']
         # out_ifaces = "".join(i + " " for i in os.listdir('/sys/class/net') if i not in bad_ifaces)[:-1]
         try:
-            subprocess.run(['sudo', f'{self.toro2_homedir}/toro2/toro2.iptablesA']).check_returncode()
+            subprocess.run(['sudo', f'{self.toro2_homedir}/toro2/toro2.iptablesA'], capture_output=False, timeout=3,
+                               shell=False).check_returncode()
         except subprocess.CalledProcessError as e:
             print(
                 f'[{bgcolors.LIGHT_YELLOW_COLOR}-{bgcolors.RESET_COLOR}] Unable {bgcolors.CYAN_COLOR} '
@@ -646,7 +646,8 @@ class Toro2:
         print(f'[{bgcolors.LIGHT_BLUE_COLOR}.{bgcolors.RESET_COLOR}] Deleting rules ... ')
 
         try:
-            subprocess.run(['sudo', f'{self.toro2_homedir}/toro2/toro2.iptablesD']).check_returncode()
+            subprocess.run(['sudo', f'{self.toro2_homedir}/toro2/toro2.iptablesD'], capture_output=False, timeout=3,
+                               shell=False).check_returncode()
         except subprocess.CalledProcessError as e:
             print(
                 f'[{bgcolors.LIGHT_YELLOW_COLOR}-{bgcolors.RESET_COLOR}] Unable {bgcolors.CYAN_COLOR} '
@@ -663,8 +664,7 @@ class Toro2:
                 query = ['sudo', f'{command}', '-f', f'{sfile}', f'{dfile}']
 
             try:
-                subprocess.run(query, capture_output=False,
-                               timeout=3, shell=False).check_returncode()
+                subprocess.run(query, capture_output=False, timeout=3, shell=False).check_returncode()
             except subprocess.CalledProcessError as e:
                 print(
                     f'[{bgcolors.LIGHT_YELLOW_COLOR}-{bgcolors.RESET_COLOR}] Unable {bgcolors.CYAN_COLOR} '
@@ -700,7 +700,7 @@ class Toro2:
 
     @check_already_installed
     def version(self):
-        return self.version
+        return self._version
 
     @check_already_installed
     def start(self):
@@ -758,7 +758,8 @@ class Toro2:
 
                     try:
                         subprocess.run(['sudo', f'{self.tor_bin}', '-f',
-                                        f'{self.toro2_homedir}/toro2/toro2.torrc']).check_returncode()
+                                        f'{self.toro2_homedir}/toro2/toro2.torrc'], capture_output=False, timeout=3,
+                               shell=False).check_returncode()
 
                     except KeyboardInterrupt:
                         self.stop(kill_tor=False)
@@ -951,7 +952,7 @@ if __name__ == "__main__":
             toro2.help()
 
         elif sys.argv[1] == "version":
-            toro2.version()
+            print(toro2.version())
 
         else:
             print(f'[{bgcolors.LIGHT_YELLOW_COLOR}-{bgcolors.RESET_COLOR}] Unknown command \'{sys.argv[1]}\'')
